@@ -1,0 +1,8 @@
+{
+  "name": "(公開用)AI広告リーガルチェックツール_12/10作成",
+  "description": "社内公開用",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "prompt": ""
+}
