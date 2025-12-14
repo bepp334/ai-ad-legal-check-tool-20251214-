@@ -125,7 +125,22 @@ const runStage1_AdTextAndOCR = async (params: Stage1Params): Promise<GeminiStage
 
   // APIキーのチェック
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEYが設定されていません。.envファイルにGEMINI_API_KEY=your_api_keyを設定してください。");
+    const errorMessage = [
+      "GEMINI_API_KEYが設定されていません。",
+      "",
+      "【ローカル開発の場合】",
+      ".envファイルをプロジェクトのルートに作成し、以下を記述してください:",
+      "GEMINI_API_KEY=your_api_key_here",
+      "",
+      "【Vercelの場合】",
+      "1. Vercelダッシュボードにログイン",
+      "2. プロジェクトを選択",
+      "3. Settings > Environment Variables を開く",
+      "4. Name: GEMINI_API_KEY, Value: あなたのAPIキー を設定",
+      "5. すべての環境（Production, Preview, Development）にチェック",
+      "6. Save をクリックして再デプロイ"
+    ].join("\n");
+    throw new Error(errorMessage);
   }
 
   try {
@@ -259,7 +274,22 @@ ${contextMessage}`;
 
   // APIキーのチェック
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEYが設定されていません。.envファイルにGEMINI_API_KEY=your_api_keyを設定してください。");
+    const errorMessage = [
+      "GEMINI_API_KEYが設定されていません。",
+      "",
+      "【ローカル開発の場合】",
+      ".envファイルをプロジェクトのルートに作成し、以下を記述してください:",
+      "GEMINI_API_KEY=your_api_key_here",
+      "",
+      "【Vercelの場合】",
+      "1. Vercelダッシュボードにログイン",
+      "2. プロジェクトを選択",
+      "3. Settings > Environment Variables を開く",
+      "4. Name: GEMINI_API_KEY, Value: あなたのAPIキー を設定",
+      "5. すべての環境（Production, Preview, Development）にチェック",
+      "6. Save をクリックして再デプロイ"
+    ].join("\n");
+    throw new Error(errorMessage);
   }
 
   try {
