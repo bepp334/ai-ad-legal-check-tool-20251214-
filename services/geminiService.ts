@@ -3,20 +3,27 @@ import { GoogleGenAI, GenerateContentResponse, Part } from "@google/genai";
 import { GeminiStage1Response, GeminiStage2Response, GroundingMetadata } from '../types';
 
 // 環境変数からAPIキーを取得（Viteのdefineで置き換えられる）
-const getApiKey = (): string => {
-  // vite.config.tsで定義された環境変数を確認
+// Viteのdefineにより、process.env.API_KEYはビルド時に文字列リテラルに置き換えられる
+const getApiKey = (): string | null => {
+  // @ts-ignore - Viteのdefineにより、process.env.API_KEYは文字列リテラルに置き換えられる
   const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
   
-  if (!apiKey || apiKey === 'undefined' || apiKey === 'null') {
-    console.error("API_KEY environment variable is not set. Please ensure it's configured in the .env file.");
-    throw new Error("GEMINI_API_KEYが設定されていません。.envファイルにGEMINI_API_KEY=your_api_keyを設定してください。");
+  // 文字列として評価され、'undefined'や'null'という文字列でないことを確認
+  if (!apiKey || apiKey === 'undefined' || apiKey === 'null' || apiKey.trim() === '') {
+    return null;
   }
   
   return apiKey;
 };
 
+// APIキーを取得
 const apiKey = getApiKey();
-const ai = new GoogleGenAI({ apiKey });
+
+// APIキーが設定されていない場合でも、GoogleGenAIを初期化（実際のAPI呼び出し時にエラーをスロー）
+// これにより、モジュールの読み込み時にエラーが発生しない
+const ai = new GoogleGenAI({ 
+  apiKey: apiKey || 'dummy-key-for-initialization' 
+});
 
 // OCRや単純なテキスト解析には高速なFlashモデルを使用
 const GEMINI_OCR_MODEL = 'gemini-2.5-flash';
@@ -115,6 +122,11 @@ const runStage1_AdTextAndOCR = async (params: Stage1Params): Promise<GeminiStage
   const fullPromptForStage1 = `${mainSystemPrompt}\n\n処理指示:\n${inputTextPart}\n\n${instructionToStop}`;
   
   contents.unshift({ text: fullPromptForStage1 });
+
+  // APIキーのチェック
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEYが設定されていません。.envファイルにGEMINI_API_KEY=your_api_keyを設定してください。");
+  }
 
   try {
     const response: GenerateContentResponse = await ai.models.generateContent({
@@ -244,6 +256,11 @@ ${contextMessage}`;
 
   // Add the text prompt
   contents.push({ text: fullPromptForStage2 });
+
+  // APIキーのチェック
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEYが設定されていません。.envファイルにGEMINI_API_KEY=your_api_keyを設定してください。");
+  }
 
   try {
     const response: GenerateContentResponse = await ai.models.generateContent({
