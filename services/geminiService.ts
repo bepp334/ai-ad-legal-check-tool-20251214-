@@ -2,11 +2,21 @@
 import { GoogleGenAI, GenerateContentResponse, Part } from "@google/genai";
 import { GeminiStage1Response, GeminiStage2Response, GroundingMetadata } from '../types';
 
-if (!process.env.API_KEY) {
-  console.error("API_KEY environment variable is not set. Please ensure it's configured in the execution environment.");
-}
+// 環境変数からAPIキーを取得（Viteのdefineで置き換えられる）
+const getApiKey = (): string => {
+  // vite.config.tsで定義された環境変数を確認
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  
+  if (!apiKey || apiKey === 'undefined' || apiKey === 'null') {
+    console.error("API_KEY environment variable is not set. Please ensure it's configured in the .env file.");
+    throw new Error("GEMINI_API_KEYが設定されていません。.envファイルにGEMINI_API_KEY=your_api_keyを設定してください。");
+  }
+  
+  return apiKey;
+};
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "fallback_or_handle_error_gracefully" });
+const apiKey = getApiKey();
+const ai = new GoogleGenAI({ apiKey });
 
 // OCRや単純なテキスト解析には高速なFlashモデルを使用
 const GEMINI_OCR_MODEL = 'gemini-2.5-flash';
