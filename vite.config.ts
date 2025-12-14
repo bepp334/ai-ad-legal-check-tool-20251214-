@@ -4,18 +4,22 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     // Vercelではprocess.envから、ローカル開発では.envファイルから読み込む
+    // 注意: Vercelではビルド時にprocess.envが利用可能
     const env = loadEnv(mode, '.', '');
     
     // 優先順位: 1. Vercelの環境変数 (process.env) 2. .envファイル
     // ビルド時に環境変数が利用可能か確認
+    // Vercelでは、環境変数はビルド時にprocess.envに自動的に注入される
     const vercelApiKey = process.env.GEMINI_API_KEY;
     const localApiKey = env.GEMINI_API_KEY;
     const apiKey = vercelApiKey || localApiKey || '';
     
     // デバッグ情報を出力（ビルド時に確認可能）
     console.log('🔍 環境変数の読み込み状況:');
-    console.log(`   - Vercel環境変数 (process.env.GEMINI_API_KEY): ${vercelApiKey ? '✅ 設定済み' : '❌ 未設定'}`);
-    console.log(`   - ローカル環境変数 (.envファイル): ${localApiKey ? '✅ 設定済み' : '❌ 未設定'}`);
+    console.log(`   - モード: ${mode}`);
+    console.log(`   - Vercel環境変数 (process.env.GEMINI_API_KEY): ${vercelApiKey ? `✅ 設定済み (長さ: ${vercelApiKey.length})` : '❌ 未設定'}`);
+    console.log(`   - ローカル環境変数 (.envファイル): ${localApiKey ? `✅ 設定済み (長さ: ${localApiKey.length})` : '❌ 未設定'}`);
+    console.log(`   - 最終的なAPIキー: ${apiKey ? `✅ 設定済み (長さ: ${apiKey.length})` : '❌ 未設定'}`);
     
     if (!apiKey) {
       console.error('❌ エラー: GEMINI_API_KEYが設定されていません。');
@@ -28,10 +32,14 @@ export default defineConfig(({ mode }) => {
       console.error('     3. Settings > Environment Variables を開く');
       console.error('     4. Name: GEMINI_API_KEY, Value: あなたのAPIキー を設定');
       console.error('     5. すべての環境（Production, Preview, Development）にチェック');
-      console.error('     6. Save をクリックして再デプロイ');
+      console.error('     6. Save をクリック');
+      console.error('     7. Deployments タブから手動で再デプロイを実行');
+      console.error('   ⚠️ 重要: 環境変数を設定した後、必ず再デプロイが必要です！');
     } else {
       const source = vercelApiKey ? 'Vercel環境変数' : '.envファイル';
-      const maskedKey = apiKey.substring(0, 10) + '...' + apiKey.substring(apiKey.length - 4);
+      const maskedKey = apiKey.length > 14 
+        ? apiKey.substring(0, 10) + '...' + apiKey.substring(apiKey.length - 4)
+        : '***';
       console.log(`✅ GEMINI_API_KEYが正常に読み込まれました (${source})`);
       console.log(`   APIキー: ${maskedKey}`);
     }
