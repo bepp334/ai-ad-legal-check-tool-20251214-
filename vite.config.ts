@@ -10,8 +10,9 @@ export default defineConfig(({ mode }) => {
     // 優先順位: 1. Vercelの環境変数 (process.env) 2. .envファイル
     // ビルド時に環境変数が利用可能か確認
     // Vercelでは、環境変数はビルド時にprocess.envに自動的に注入される
-    const vercelApiKey = process.env.GEMINI_API_KEY;
-    const localApiKey = env.GEMINI_API_KEY;
+    // 注意: process.envはNode.jsの環境変数オブジェクトなので、直接アクセス可能
+    const vercelApiKey = process.env.GEMINI_API_KEY?.trim() || '';
+    const localApiKey = env.GEMINI_API_KEY?.trim() || '';
     const apiKey = vercelApiKey || localApiKey || '';
     
     // デバッグ情報を出力（ビルド時に確認可能）
