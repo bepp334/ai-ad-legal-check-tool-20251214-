@@ -23,8 +23,11 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
   const [adCreativeImagesBase64, setAdCreativeImagesBase64] = useState<string[]>([]);
   const [adCreativeImagePreviews, setAdCreativeImagePreviews] = useState<string[]>([]);
   
-  const [referenceUrls, setReferenceUrls] = useState<string>('');
+  const [referenceUrls, setReferenceUrls] = useState<string[]>([]);
+  const [newReferenceUrl, setNewReferenceUrl] = useState<string>('');
   const [clientSharedInfo, setClientSharedInfo] = useState<string>('');
+  
+  const MAX_REFERENCE_URLS = 20; // URL contextツールの制限に合わせて20個まで
   
   const [csvFileName, setCsvFileName] = useState<string>('');
 
@@ -154,6 +157,34 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
     setAdCreativeImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  const addReferenceUrl = () => {
+    const trimmedUrl = newReferenceUrl.trim();
+    if (!trimmedUrl) return;
+    
+    // URL形式の検証
+    if (!trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
+      alert('URLは http:// または https:// で始まる必要があります。');
+      return;
+    }
+    
+    if (referenceUrls.length >= MAX_REFERENCE_URLS) {
+      alert(`参照URLは最大${MAX_REFERENCE_URLS}個まで入力できます。`);
+      return;
+    }
+    
+    if (referenceUrls.includes(trimmedUrl)) {
+      alert('このURLは既に追加されています。');
+      return;
+    }
+    
+    setReferenceUrls(prev => [...prev, trimmedUrl]);
+    setNewReferenceUrl('');
+  };
+
+  const removeReferenceUrl = (index: number) => {
+    setReferenceUrls(prev => prev.filter((_, i) => i !== index));
+  };
+
 
   const handleSubmit = useCallback((event: React.FormEvent) => {
     event.preventDefault();
@@ -161,7 +192,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
     const isCsvFileProvided = adTextSource === 'csv' && adTextCsvFileContent;
     const isAdTextImagesProvided = adTextImagesBase64.length > 0;
     const isCreativeImagesProvided = adCreativeImagesBase64.length > 0;
-    const isUrlProvided = referenceUrls.trim() !== '';
+    const isUrlProvided = referenceUrls.length > 0;
     const isClientInfoProvided = clientSharedInfo.trim() !== '';
 
     // 入力チェック: 少なくとも何らかの情報が入力されていること
@@ -175,10 +206,10 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
       adTextCsvFileContent: isCsvFileProvided ? adTextCsvFileContent : null,
       adTextImagesBase64: isAdTextImagesProvided ? adTextImagesBase64 : null,
       adCreativeImagesBase64: adCreativeImagesBase64.length > 0 ? adCreativeImagesBase64 : null,
-      referenceUrls,
+      referenceUrls: referenceUrls.join(','),
       clientSharedInfo,
     });
-  }, [onSubmit, adTextSource, adTextDirect, adTextCsvFileContent, adTextImagesBase64, adCreativeImagesBase64, referenceUrls, clientSharedInfo]);
+  }, [onSubmit, adTextSource, adTextDirect, adTextCsvFileContent, adTextImagesBase64, adCreativeImagesBase64, referenceUrls, clientSharedInfo, newReferenceUrl]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -320,16 +351,53 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
 
       <div>
         <label htmlFor="referenceUrls" className="block text-sm font-medium text-slate-300 mb-1">
-          参照URL (カンマ区切り)
+          参照URL (最大{MAX_REFERENCE_URLS}個)
         </label>
-        <textarea
-          id="referenceUrls"
-          value={referenceUrls}
-          onChange={(e) => setReferenceUrls(e.target.value)}
-          rows={3}
-          className="w-full p-3 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 text-slate-100 placeholder-slate-400"
-          placeholder="例: https://example.com/product, https://example.com/policy"
-        />
+        <div className="flex gap-2 mb-2">
+          <input
+            type="text"
+            value={newReferenceUrl}
+            onChange={(e) => setNewReferenceUrl(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addReferenceUrl();
+              }
+            }}
+            placeholder="https://example.com/product"
+            className="flex-1 p-3 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 text-slate-100 placeholder-slate-400"
+            disabled={referenceUrls.length >= MAX_REFERENCE_URLS}
+          />
+          <button
+            type="button"
+            onClick={addReferenceUrl}
+            disabled={referenceUrls.length >= MAX_REFERENCE_URLS || !newReferenceUrl.trim()}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-semibold rounded-md transition duration-150 ease-in-out"
+          >
+            追加
+          </button>
+        </div>
+        {referenceUrls.length > 0 && (
+          <div className="mt-2 space-y-2">
+            {referenceUrls.map((url, index) => (
+              <div key={index} className="flex items-center gap-2 p-2 bg-slate-700 border border-slate-600 rounded-md">
+                <span className="flex-1 text-sm text-slate-200 break-all">{url}</span>
+                <button
+                  type="button"
+                  onClick={() => removeReferenceUrl(index)}
+                  className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded transition duration-150 ease-in-out"
+                >
+                  削除
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {referenceUrls.length >= MAX_REFERENCE_URLS && (
+          <p className="mt-2 text-sm text-yellow-400">
+            最大{MAX_REFERENCE_URLS}個まで入力できます（URL contextツールの制限に合わせています）
+          </p>
+        )}
       </div>
 
       <div>
