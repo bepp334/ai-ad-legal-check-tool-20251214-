@@ -176,16 +176,46 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
   
   const handleCopyToClipboard = async () => {
     const reportText = getStepData('step4FinalReport');
-    if (reportText) {
-      try {
-        await navigator.clipboard.writeText(reportText);
-        setCopyStatus('コピーしました！');
-        setTimeout(() => setCopyStatus(''), 2000);
-      } catch (err) {
-        setCopyStatus('コピーに失敗しました。');
-        console.error('クリップボードへのコピーに失敗:', err);
-        setTimeout(() => setCopyStatus(''), 2000);
+    if (!reportText) return;
+
+    try {
+      // 参照URLと事実確認サマリーを含めた完全なレポートを作成
+      let fullReport = '';
+      
+      // 1. 参照URLセクション
+      if (userInput && userInput.referenceUrls && userInput.referenceUrls.trim()) {
+        const urls = userInput.referenceUrls
+          .split(/[,\n]/)
+          .map(url => url.trim())
+          .filter(url => url && (url.startsWith('http://') || url.startsWith('https://')));
+        
+        if (urls.length > 0) {
+          fullReport += '## 参照URL（事実確認用）\n\n';
+          urls.forEach(url => {
+            fullReport += `- ${url}\n`;
+          });
+          fullReport += '\n---\n\n';
+        }
       }
+      
+      // 2. 事実確認サマリー（ステップ3）セクション
+      const step3FactBase = getStepData('step3FactBase');
+      if (step3FactBase && step3FactBase.trim()) {
+        fullReport += '## 事実確認サマリー（ステップ3）\n\n';
+        fullReport += step3FactBase;
+        fullReport += '\n\n---\n\n';
+      }
+      
+      // 3. 最終レポート（ステップ4）
+      fullReport += reportText;
+      
+      await navigator.clipboard.writeText(fullReport);
+      setCopyStatus('コピーしました！');
+      setTimeout(() => setCopyStatus(''), 2000);
+    } catch (err) {
+      setCopyStatus('コピーに失敗しました。');
+      console.error('クリップボードへのコピーに失敗:', err);
+      setTimeout(() => setCopyStatus(''), 2000);
     }
   };
 
