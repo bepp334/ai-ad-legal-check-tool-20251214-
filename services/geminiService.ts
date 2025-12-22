@@ -75,7 +75,7 @@ const runStage1_AdTextAndOCR = async (params: Stage1Params): Promise<GeminiStage
   if (isCsvInput && adTextCsvFileContent) {
     inputTextPart = `ユーザーは広告テキストとしてCSVファイルを提供しました。内容は以下の通りです:\n\`\`\`csv\n${adTextCsvFileContent}\n\`\`\`\nこのCSVを解析し、「===== CSV_TEXT_START =====」ブロックを生成してください。`;
   } else if (hasDirectTextInput && adTextDirect) {
-    inputTextPart = `ユーザーは広告テキスト、URL、および可能性としてクライアント共有情報を含む以下のテキストを直接入力しました:\n\`\`\`\n${adTextDirect}\n\`\`\`\nこのテキストを処理し、「===== CSV_TEXT_START =====」ブロックを生成し、検出されたURLとクライアント情報をリストアップしてください。`;
+    inputTextPart = `ユーザーは広告テキスト、URL、および可能性としてクライアント共有情報を含む以下のテキストを直接入力しました:\n\`\`\`\n${adTextDirect}\n\`\`\`\nこのテキストを処理し、「===== CSV_TEXT_START =====」ブロックを生成し、検出されたURLとクライアント情報をリストアップしてください。\n\n**重要**: 広告テキスト内に含まれるURLは、広告内容の一部として表示するのみで、事実確認用のreference_urlには追加しないでください。事実確認用のURLは、ユーザーが別途「参照URL」フィールドに入力したもののみを使用します。`;
   } else {
     inputTextPart = "ユーザーはCSVファイルもテキスト直接入力も行いませんでした。広告テキスト画像が提供されている場合は、それらが主要なテキストソースとなる可能性があります。「===== CSV_TEXT_START =====」ブロックは空または広告テキスト画像の内容に基づいて適切に処理してください。";
   }

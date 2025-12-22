@@ -62,18 +62,30 @@ const App: React.FC = () => {
     setRecheckPrompt('');
   };
   
-  const parseGeminiStage1Response = (responseText: string, isCsvInput: boolean, hasDirectTextInput: boolean) => {
+  const parseGeminiStage1Response = (responseText: string, isCsvInput: boolean, hasDirectTextInput: boolean, referenceUrls?: string) => {
     const csvTextMatch = responseText.match(/===== CSV_TEXT_START =====\s*([\s\S]*?)\s*===== CSV_TEXT_END =====/);
     setStep1CsvText(csvTextMatch ? csvTextMatch[1].trim() : KNOWN_CSV_ERROR_MESSAGE);
 
+    // 参照URLフィールドに入力されたURLを表示（事実確認用のURL）
+    if (referenceUrls && referenceUrls.trim()) {
+      const urls = referenceUrls
+        .split(/[,\n]/)
+        .map(url => url.trim())
+        .filter(url => url && (url.startsWith('http://') || url.startsWith('https://')));
+      
+      if (urls.length > 0) {
+        setStep1DetectedUrls(`参照URL（事実確認用）:\n${urls.map(url => `- ${url}`).join('\n')}`);
+      } else {
+        setStep1DetectedUrls("参照URLは検出されませんでした。");
+      }
+    } else {
+      setStep1DetectedUrls("参照URLは検出されませんでした。");
+    }
+
     if (hasDirectTextInput && !isCsvInput) { 
-        const urlsMatch = responseText.match(/🔗 検出されたURL:\s*([\s\S]*?)(?=\n\n📝|\n✅ STEP1 完了)/);
-        setStep1DetectedUrls(urlsMatch ? urlsMatch[1].trim() : "URLは検出されませんでした、または解析に失敗しました。");
-        
         const clientInfoMatch = responseText.match(/📝 検出されたクライアント共有情報:\s*([\s\S]*?)(?=\n✅ STEP1 完了)/);
         setStep1ClientInfo(clientInfoMatch ? clientInfoMatch[1].trim() : "クライアント共有情報は検出されませんでした、または解析に失敗しました。");
     } else {
-        setStep1DetectedUrls(null);
         setStep1ClientInfo(null);
     }
 
@@ -123,7 +135,7 @@ const App: React.FC = () => {
         hasDirectTextInput: !!data.adTextDirect.trim(),
       });
       
-      parseGeminiStage1Response(stage1Response.text, !!data.adTextCsvFileContent, !!data.adTextDirect.trim());
+      parseGeminiStage1Response(stage1Response.text, !!data.adTextCsvFileContent, !!data.adTextDirect.trim(), data.referenceUrls);
 
     } catch (error) {
       console.error("ステージ1でのエラー:", error);
