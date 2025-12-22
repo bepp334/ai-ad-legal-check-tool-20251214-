@@ -26,10 +26,10 @@ const ai = new GoogleGenAI({
 });
 
 // OCRや単純なテキスト解析には高速なFlashモデルを使用
-const GEMINI_OCR_MODEL = 'gemini-2.5-flash';
+const GEMINI_OCR_MODEL = 'gemini-3-flash-preview';
 
-// 複雑な推論、事実確認、リーガルチェックには高性能なProモデル(Gemini 3.0)を使用
-const GEMINI_CHECK_MODEL = 'gemini-3-pro-preview';
+// 複雑な推論、事実確認、リーガルチェックにはGemini 3 Flashを使用
+const GEMINI_CHECK_MODEL = 'gemini-3-flash-preview';
 
 interface Stage1Params {
   mainSystemPrompt: string;
