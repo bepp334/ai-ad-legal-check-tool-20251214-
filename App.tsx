@@ -7,13 +7,11 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 import { AdCheckInput, AdCheckStep, StepKey, OCRVerificationItem, GroundingMetadata } from './types';
 import { geminiService } from './services/geminiService';
 import { MAIN_SYSTEM_PROMPT, KNOWLEDGE_BASE_1_REQUIRED_OUTPUT, KNOWLEDGE_BASE_2_LINE_GUIDELINES, KNOWLEDGE_BASE_3_BASIC_AD_RULES, KNOWLEDGE_BASE_4_FINANCIAL_LOAN_RULES, KNOWLEDGE_BASE_5_COSMETICS_RULES, KNOWLEDGE_BASE_6_MEDICAL_RULES } from './constants';
-import { saveCheckResult } from './services/supabaseService';
 
 const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<AdCheckStep>(AdCheckStep.Input);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [saveStatus, setSaveStatus] = useState<{ success: boolean; message: string } | null>(null);
 
   const [userInput, setUserInput] = useState<AdCheckInput | null>(null);
   
@@ -51,7 +49,6 @@ const App: React.FC = () => {
     setCurrentStep(isFullReset ? AdCheckStep.Input : AdCheckStep.ProcessingStep3Step4); // Go to input or back to processing for re-check
     setIsLoading(false);
     setErrorMessage(null);
-    setSaveStatus(null);
     setStep2RawOcrText(null);
     setStep2NeedsVerification(false);
     setStep2VerificationItems([]);
@@ -241,43 +238,6 @@ const App: React.FC = () => {
         }
         setStep4FinalReport(finalReportContent);
         
-        // NG項目がある場合、Supabaseに保存
-        try {
-          const saveResult = await saveCheckResult({
-            adText: ad_text_for_gemini,
-            finalReport: finalReportContent,
-            step3FactBase: step3Match ? step3Match[0].trim() : null,
-            referenceUrls: userInput.referenceUrls || null,
-            clientSharedInfo: userInput.clientSharedInfo || null,
-          });
-          
-          if (saveResult.success) {
-            setSaveStatus({
-              success: true,
-              message: `✅ NG項目をSupabaseに保存しました（ID: ${saveResult.checkId?.substring(0, 8)}...）`,
-            });
-            // 5秒後に通知を消す
-            setTimeout(() => setSaveStatus(null), 5000);
-          } else {
-            // NG項目がない場合は通知しない（正常な動作）
-            if (saveResult.error && !saveResult.error.includes('NG項目が見つかりませんでした')) {
-              setSaveStatus({
-                success: false,
-                message: `⚠️ Supabaseへの保存に失敗: ${saveResult.error}`,
-              });
-              setTimeout(() => setSaveStatus(null), 5000);
-            }
-          }
-        } catch (saveError) {
-          // 保存エラーは処理を止めない（チェック結果の表示は続行）
-          console.error('Supabase保存エラー（処理は続行）:', saveError);
-          setSaveStatus({
-            success: false,
-            message: `⚠️ Supabaseへの保存中にエラーが発生しました`,
-          });
-          setTimeout(() => setSaveStatus(null), 5000);
-        }
-        
         setCurrentStep(AdCheckStep.Complete);
 
     } catch (error) {
@@ -351,12 +311,6 @@ const App: React.FC = () => {
           <div className="bg-red-700 border border-red-900 text-red-100 px-4 py-3 rounded relative mb-4" role="alert">
             <strong className="font-bold">エラー: </strong>
             <span className="block sm:inline">{errorMessage}</span>
-          </div>
-        )}
-
-        {saveStatus && (
-          <div className={`${saveStatus.success ? 'bg-green-700 border-green-900 text-green-100' : 'bg-yellow-700 border-yellow-900 text-yellow-100'} border px-4 py-3 rounded relative mb-4`} role="alert">
-            <span className="block sm:inline">{saveStatus.message}</span>
           </div>
         )}
 
