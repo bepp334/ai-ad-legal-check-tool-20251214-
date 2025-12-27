@@ -65,6 +65,120 @@ function parseMarkdownTable(markdown: string): TableRow[] | null {
   return rows.length > 0 ? rows : null;
 }
 
+// MarkdownテーブルをHTMLテーブルに変換する関数
+function convertMarkdownTableToHtml(markdown: string): string {
+  const tableData = parseMarkdownTable(markdown);
+  if (!tableData || tableData.length === 0) return markdown;
+
+  const headers = Object.keys(tableData[0]);
+  let html = '<table style="border-collapse: collapse; width: 100%; margin: 10px 0; border: 1px solid #ddd;"><thead><tr>';
+  
+  // ヘッダー行
+  headers.forEach(header => {
+    const headerText = convertInlineMarkdown(header);
+    html += `<th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2; font-weight: bold;">${headerText}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+  
+  // データ行
+  tableData.forEach(row => {
+    html += '<tr>';
+    headers.forEach(header => {
+      const cellText = convertInlineMarkdown(row[header] || '');
+      html += `<td style="border: 1px solid #ddd; padding: 8px; text-align: left;">${cellText}</td>`;
+    });
+    html += '</tr>';
+  });
+  
+  html += '</tbody></table>';
+  return html;
+}
+
+// インラインMarkdown記法をHTMLに変換（太字、斜体、コードなど）
+function convertInlineMarkdown(text: string): string {
+  if (!text) return '';
+  
+  // HTMLエスケープを先に実行
+  let html = escapeHtml(text);
+  
+  // インラインコード `code`（先に処理して、他の記法と競合しないようにする）
+  html = html.replace(/`([^`]+)`/g, '<code style="background-color: #f4f4f4; padding: 2px 4px; border-radius: 3px;">$1</code>');
+  
+  // 太字 **text** または __text__
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+  
+  // 斜体 *text* または _text_（太字の後に処理、太字でない単一の*や_のみ）
+  // 太字でない単一の*を探す（**の前後でないもの）
+  html = html.replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, '<em>$1</em>');
+  html = html.replace(/(?<!_)_([^_\n]+?)_(?!_)/g, '<em>$1</em>');
+  
+  // 改行を<br/>に変換
+  html = html.replace(/\n/g, '<br/>');
+  
+  return html;
+}
+
+// HTMLエスケープ関数
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// MarkdownテキストをHTMLに変換（テーブルを含む）
+function convertMarkdownToHtml(markdown: string): string {
+  const lines = markdown.split('\n');
+  let result = '';
+  let currentTableLines: string[] = [];
+  let currentParagraph = '';
+
+  function flushParagraph() {
+    if (currentParagraph.trim()) {
+      let para = convertInlineMarkdown(currentParagraph);
+      result += `<p>${para}</p>`;
+      currentParagraph = '';
+    }
+  }
+
+  function flushTable() {
+    if (currentTableLines.length > 0) {
+      const tableMarkdown = currentTableLines.join('\n');
+      result += convertMarkdownTableToHtml(tableMarkdown);
+      currentTableLines = [];
+    }
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    if (line.startsWith('## ')) {
+      flushParagraph();
+      flushTable();
+      result += `<h2>${escapeHtml(line.substring(3))}</h2>`;
+    } else if (line.startsWith('### ')) {
+      flushParagraph();
+      flushTable();
+      result += `<h3>${escapeHtml(line.substring(4))}</h3>`;
+    } else if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+      flushParagraph();
+      currentTableLines.push(line);
+    } else {
+      flushTable();
+      if (line.trim() === '' && currentParagraph.trim()) {
+        flushParagraph();
+      } else {
+        currentParagraph += (currentParagraph ? '\n' : '') + line;
+      }
+    }
+  }
+  
+  flushParagraph();
+  flushTable();
+  
+  return result;
+}
+
 const RenderMarkdownReport: React.FC<{ report: string }> = React.memo(({ report }) => {
   const elements: React.ReactNode[] = [];
   const lines = report.trim().split('\n');
@@ -340,29 +454,20 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
         fullReportText += step3FactBase;
         fullReportText += '\n\n---\n\n';
         
-        // Markdownを簡易的にHTMLに変換（基本的な変換のみ）
-        const step3Html = step3FactBase
-          .replace(/## (.*)/g, '<h2>$1</h2>')
-          .replace(/### (.*)/g, '<h3>$1</h3>')
-          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/\n/g, '<br/>');
+        // MarkdownをHTMLに変換（テーブルを含む）
+        const step3Html = convertMarkdownToHtml(step3FactBase);
         fullReportHtml += '<h2>事実確認サマリー（ステップ3）</h2>' + step3Html + '<hr/>';
       }
       
       // 4. 最終レポート（ステップ4）
       fullReportText += reportText;
       
-      // Markdownを簡易的にHTMLに変換
-      const reportHtml = reportText
-        .replace(/## (.*)/g, '<h2>$1</h2>')
-        .replace(/### (.*)/g, '<h3>$1</h3>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/`(.*?)`/g, '<code>$1</code>')
-        .replace(/\n/g, '<br/>');
+      // MarkdownをHTMLに変換（テーブルを含む）
+      const reportHtml = convertMarkdownToHtml(reportText);
       fullReportHtml += reportHtml;
       
       // HTML形式でクリップボードにコピー（画像を含む）
+      // Notionに貼り付ける際に表が正しく認識されるように、bodyタグの中身のみを使用
       const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -371,9 +476,12 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
             img { max-width: 100%; height: auto; }
-            table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+            table { border-collapse: collapse; width: 100%; margin: 10px 0; border: 1px solid #ddd; }
             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
+            th { background-color: #f2f2f2; font-weight: bold; }
+            p { margin: 8px 0; }
+            h2 { font-size: 1.5em; font-weight: bold; margin: 16px 0 8px 0; }
+            h3 { font-size: 1.2em; font-weight: bold; margin: 12px 0 6px 0; }
           </style>
         </head>
         <body>
@@ -613,12 +721,19 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
                 現在の結果に対して追加の指示やフィードバックがある場合は、以下に入力して再チェックを実行できます。
                 AIはあなたの入力を考慮して、再度評価を行います。
               </p>
+              <div className="mb-3 p-3 bg-slate-700/50 rounded-md border border-slate-600">
+                <p className="text-sm text-slate-400 mb-2 font-semibold">入力例:</p>
+                <ul className="text-sm text-slate-300 space-y-1 list-disc list-inside">
+                  <li>「○○の箇所は△△という解釈もできるため問題ないはずです。再検討してください。」</li>
+                  <li>「最初に〇〇というクライアントからもらった非公開情報を入れ忘れてしまったのでそれを考慮して」</li>
+                </ul>
+              </div>
               <textarea
                 value={recheckPrompt}
                 onChange={(e) => setRecheckPrompt(e.target.value)}
                 rows={4}
                 className="w-full p-3 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 text-slate-100 placeholder-slate-400"
-                placeholder="例: 「○○の箇所は△△という解釈もできるため問題ないはずです。再検討してください。」"
+                placeholder="再チェックの指示を入力してください..."
               />
               <button
                 onClick={onRecheck}
