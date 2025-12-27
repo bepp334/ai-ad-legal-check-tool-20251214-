@@ -174,6 +174,42 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
     updateStepData('step2CorrectedOcrText', event.target.value);
   };
   
+  // 画像をリサイズしてbase64に変換する関数（Notionの制限に対応）
+  const resizeImageForNotion = async (base64String: string, maxWidth: number = 800, maxHeight: number = 800, quality: number = 0.7): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // アスペクト比を保ちながらリサイズ
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = width * ratio;
+          height = height * ratio;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas context not available'));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // JPEG形式で圧縮（Notionに適した形式）
+        const mimeType = 'image/jpeg';
+        const resizedBase64 = canvas.toDataURL(mimeType, quality);
+        resolve(resizedBase64);
+      };
+      img.onerror = reject;
+      img.src = base64String;
+    });
+  };
+
   const handleCopyToClipboard = async () => {
     const reportText = getStepData('step4FinalReport');
     if (!reportText) return;
@@ -202,7 +238,7 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
         }
       }
       
-      // 2. 画像セクション（HTML形式のみ）
+      // 2. 画像セクション（HTML形式のみ）- リサイズしてから追加
       if (userInput) {
         const hasAdTextImages = userInput.adTextImagesBase64 && userInput.adTextImagesBase64.length > 0;
         const hasCreativeImages = userInput.adCreativeImagesBase64 && userInput.adCreativeImagesBase64.length > 0;
@@ -212,17 +248,31 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
           
           if (hasAdTextImages) {
             fullReportHtml += '<h3>広告テキスト画像</h3><div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">';
-            userInput.adTextImagesBase64.forEach((base64, index) => {
-              fullReportHtml += `<img src="${base64}" alt="広告テキスト画像 ${index + 1}" style="max-width: 300px; max-height: 300px; border: 1px solid #ccc; margin: 5px;" />`;
-            });
+            for (let index = 0; index < userInput.adTextImagesBase64.length; index++) {
+              const base64 = userInput.adTextImagesBase64[index];
+              try {
+                const resizedBase64 = await resizeImageForNotion(base64);
+                fullReportHtml += `<img src="${resizedBase64}" alt="広告テキスト画像 ${index + 1}" style="max-width: 300px; max-height: 300px; border: 1px solid #ccc; margin: 5px;" />`;
+              } catch (err) {
+                console.warn(`画像 ${index + 1} のリサイズに失敗しました。元の画像を使用します。`, err);
+                fullReportHtml += `<img src="${base64}" alt="広告テキスト画像 ${index + 1}" style="max-width: 300px; max-height: 300px; border: 1px solid #ccc; margin: 5px;" />`;
+              }
+            }
             fullReportHtml += '</div>';
           }
           
           if (hasCreativeImages) {
             fullReportHtml += '<h3>広告クリエイティブ画像</h3><div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">';
-            userInput.adCreativeImagesBase64.forEach((base64, index) => {
-              fullReportHtml += `<img src="${base64}" alt="広告クリエイティブ画像 ${index + 1}" style="max-width: 300px; max-height: 300px; border: 1px solid #ccc; margin: 5px;" />`;
-            });
+            for (let index = 0; index < userInput.adCreativeImagesBase64.length; index++) {
+              const base64 = userInput.adCreativeImagesBase64[index];
+              try {
+                const resizedBase64 = await resizeImageForNotion(base64);
+                fullReportHtml += `<img src="${resizedBase64}" alt="広告クリエイティブ画像 ${index + 1}" style="max-width: 300px; max-height: 300px; border: 1px solid #ccc; margin: 5px;" />`;
+              } catch (err) {
+                console.warn(`画像 ${index + 1} のリサイズに失敗しました。元の画像を使用します。`, err);
+                fullReportHtml += `<img src="${base64}" alt="広告クリエイティブ画像 ${index + 1}" style="max-width: 300px; max-height: 300px; border: 1px solid #ccc; margin: 5px;" />`;
+              }
+            }
             fullReportHtml += '</div>';
           }
           
