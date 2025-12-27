@@ -18,20 +18,11 @@ View your app in AI Studio: https://ai.studio/apps/drive/19hcQdUySCXlSVZ1XR8WEb-
    npm install
    ```
 
-2. Create a `.env` file in the root directory and set your API keys:
+2. Create a `.env` file in the root directory and set your Gemini API key:
    ```bash
    GEMINI_API_KEY=your_api_key_here
-   VITE_SUPABASE_URL=your_supabase_project_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
    ⚠️ **重要**: `.env`ファイルは`.gitignore`に含まれているため、Gitにコミットされません。APIキーを安全に管理できます。
-   
-   **Supabaseの設定方法:**
-   1. [Supabase](https://supabase.com/)でプロジェクトを作成
-   2. プロジェクトのSettings > APIから以下を取得:
-      - `Project URL` → `VITE_SUPABASE_URL`
-      - `anon public` key → `VITE_SUPABASE_ANON_KEY`
-   3. `supabase/schema.sql`をSupabaseのSQL Editorで実行してテーブルを作成
 
 3. Run the app:
    ```bash

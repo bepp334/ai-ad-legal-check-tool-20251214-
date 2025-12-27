@@ -180,7 +180,8 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
 
     try {
       // 参照URLと事実確認サマリーを含めた完全なレポートを作成
-      let fullReport = '';
+      let fullReportText = '';
+      let fullReportHtml = '';
       
       // 1. 参照URLセクション
       if (userInput && userInput.referenceUrls && userInput.referenceUrls.trim()) {
@@ -190,31 +191,122 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
           .filter(url => url && (url.startsWith('http://') || url.startsWith('https://')));
         
         if (urls.length > 0) {
-          fullReport += '## 参照URL（事実確認用）\n\n';
+          fullReportText += '## 参照URL（事実確認用）\n\n';
+          fullReportHtml += '<h2>参照URL（事実確認用）</h2><ul>';
           urls.forEach(url => {
-            fullReport += `- ${url}\n`;
+            fullReportText += `- ${url}\n`;
+            fullReportHtml += `<li><a href="${url}">${url}</a></li>`;
           });
-          fullReport += '\n---\n\n';
+          fullReportText += '\n---\n\n';
+          fullReportHtml += '</ul><hr/>';
         }
       }
       
-      // 2. 事実確認サマリー（ステップ3）セクション
-      const step3FactBase = getStepData('step3FactBase');
-      if (step3FactBase && step3FactBase.trim()) {
-        fullReport += '## 事実確認サマリー（ステップ3）\n\n';
-        fullReport += step3FactBase;
-        fullReport += '\n\n---\n\n';
+      // 2. 画像セクション（HTML形式のみ）
+      if (userInput) {
+        const hasAdTextImages = userInput.adTextImagesBase64 && userInput.adTextImagesBase64.length > 0;
+        const hasCreativeImages = userInput.adCreativeImagesBase64 && userInput.adCreativeImagesBase64.length > 0;
+        
+        if (hasAdTextImages || hasCreativeImages) {
+          fullReportHtml += '<h2>入力画像</h2>';
+          
+          if (hasAdTextImages) {
+            fullReportHtml += '<h3>広告テキスト画像</h3><div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">';
+            userInput.adTextImagesBase64.forEach((base64, index) => {
+              fullReportHtml += `<img src="${base64}" alt="広告テキスト画像 ${index + 1}" style="max-width: 300px; max-height: 300px; border: 1px solid #ccc; margin: 5px;" />`;
+            });
+            fullReportHtml += '</div>';
+          }
+          
+          if (hasCreativeImages) {
+            fullReportHtml += '<h3>広告クリエイティブ画像</h3><div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">';
+            userInput.adCreativeImagesBase64.forEach((base64, index) => {
+              fullReportHtml += `<img src="${base64}" alt="広告クリエイティブ画像 ${index + 1}" style="max-width: 300px; max-height: 300px; border: 1px solid #ccc; margin: 5px;" />`;
+            });
+            fullReportHtml += '</div>';
+          }
+          
+          fullReportHtml += '<hr/>';
+        }
       }
       
-      // 3. 最終レポート（ステップ4）
-      fullReport += reportText;
+      // 3. 事実確認サマリー（ステップ3）セクション
+      const step3FactBase = getStepData('step3FactBase');
+      if (step3FactBase && step3FactBase.trim()) {
+        fullReportText += '## 事実確認サマリー（ステップ3）\n\n';
+        fullReportText += step3FactBase;
+        fullReportText += '\n\n---\n\n';
+        
+        // Markdownを簡易的にHTMLに変換（基本的な変換のみ）
+        const step3Html = step3FactBase
+          .replace(/## (.*)/g, '<h2>$1</h2>')
+          .replace(/### (.*)/g, '<h3>$1</h3>')
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\n/g, '<br/>');
+        fullReportHtml += '<h2>事実確認サマリー（ステップ3）</h2>' + step3Html + '<hr/>';
+      }
       
-      await navigator.clipboard.writeText(fullReport);
-      setCopyStatus('コピーしました！');
+      // 4. 最終レポート（ステップ4）
+      fullReportText += reportText;
+      
+      // Markdownを簡易的にHTMLに変換
+      const reportHtml = reportText
+        .replace(/## (.*)/g, '<h2>$1</h2>')
+        .replace(/### (.*)/g, '<h3>$1</h3>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br/>');
+      fullReportHtml += reportHtml;
+      
+      // HTML形式でクリップボードにコピー（画像を含む）
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            img { max-width: 100%; height: auto; }
+            table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+          </style>
+        </head>
+        <body>
+          ${fullReportHtml}
+        </body>
+        </html>
+      `;
+      
+      // Clipboard APIを使用してHTMLとプレーンテキストの両方をコピー
+      if (navigator.clipboard && navigator.clipboard.write) {
+        const clipboardItem = new ClipboardItem({
+          'text/html': new Blob([htmlContent], { type: 'text/html' }),
+          'text/plain': new Blob([fullReportText], { type: 'text/plain' })
+        });
+        await navigator.clipboard.write([clipboardItem]);
+      } else {
+        // フォールバック: テキストのみコピー
+        await navigator.clipboard.writeText(fullReportText);
+      }
+      
+      setCopyStatus('コピーしました！（画像を含む）');
       setTimeout(() => setCopyStatus(''), 2000);
     } catch (err) {
-      setCopyStatus('コピーに失敗しました。');
-      console.error('クリップボードへのコピーに失敗:', err);
+      // エラー時はテキストのみで再試行
+      try {
+        const reportText = getStepData('step4FinalReport');
+        if (reportText) {
+          await navigator.clipboard.writeText(reportText);
+          setCopyStatus('コピーしました！（テキストのみ）');
+        } else {
+          setCopyStatus('コピーに失敗しました。');
+        }
+      } catch (fallbackErr) {
+        setCopyStatus('コピーに失敗しました。');
+        console.error('クリップボードへのコピーに失敗:', fallbackErr);
+      }
       setTimeout(() => setCopyStatus(''), 2000);
     }
   };
@@ -348,13 +440,40 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
         <div className="mb-6 p-4 border border-slate-700 rounded-lg bg-slate-800/50">
           <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 mb-4 text-center">ステップ4: 最終広告チェックレポート</h2>
           <RenderMarkdownReport report={getStepData('step4FinalReport')!} />
-          <div className="mt-6 text-center flex flex-col sm:flex-row justify-center gap-4">
-            <button
-                onClick={handleCopyToClipboard}
-                className="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-6 rounded transition duration-150 ease-in-out"
-            >
-                レポートをコピー
-            </button>
+          <div className="mt-6 space-y-4">
+            {/* Notion保存案内 */}
+            <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4 mb-4">
+              <h4 className="text-sm font-semibold text-blue-300 mb-2 flex items-center">
+                <span className="mr-2">📝</span>
+                Notionデータベースへの保存方法
+              </h4>
+              <ol className="text-xs text-slate-300 space-y-2 list-decimal list-inside ml-2">
+                <li>
+                  以下のNotionURLを開いてください：
+                  <br />
+                  <a 
+                    href="https://www.notion.so/zeals-ai/2d6d8ab456c080509b25d9bbe6509c7d?v=2d6d8ab456c08028a797000c808b1ca1&source=copy_link" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 underline break-all"
+                  >
+                    https://www.notion.so/zeals-ai/2d6d8ab456c080509b25d9bbe6509c7d
+                  </a>
+                </li>
+                <li>そのデータベースで新しいNotionページを作成してください</li>
+                <li>「レポートをコピー」ボタンでコピーした内容を、作成したNotionページにペーストしてください</li>
+                <li>Notionページのタイトルは、判別がつけば何でも構いません</li>
+                <li>ペーストしたら、そのNotionページのURLをセールスフォースの「チェック記録URL」欄に記載してください</li>
+              </ol>
+            </div>
+            
+            <div className="text-center flex flex-col sm:flex-row justify-center gap-4">
+              <button
+                  onClick={handleCopyToClipboard}
+                  className="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-6 rounded transition duration-150 ease-in-out"
+              >
+                  レポートをコピー
+              </button>
             <button
                 onClick={handleDownloadDocx}
                 disabled={isDownloading}
