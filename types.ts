@@ -57,4 +57,4 @@ export type StepKey =
   | 'step4FinalReport';
 
 export const MAX_AD_TEXT_IMAGES = 8;
-export const MAX_AD_CREATIVE_IMAGES = 8;
+export const MAX_AD_CREATIVE_IMAGES = 20;

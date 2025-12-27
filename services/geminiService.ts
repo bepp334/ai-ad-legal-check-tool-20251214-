@@ -26,10 +26,13 @@ const ai = new GoogleGenAI({
 });
 
 // OCRや単純なテキスト解析には高速なFlashモデルを使用
-const GEMINI_OCR_MODEL = 'gemini-2.5-flash';
+const GEMINI_OCR_MODEL = 'gemini-3-flash-preview';
 
-// 複雑な推論、事実確認、リーガルチェックには高性能なProモデル(Gemini 3.0)を使用
-const GEMINI_CHECK_MODEL = 'gemini-3-pro-preview';
+// 事実確認（URL contextツール使用）にはGemini 2.5 Flashを使用
+const GEMINI_FACT_CHECK_MODEL = 'gemini-2.5-flash';
+
+// 複雑な推論、リーガルチェックにはGemini 3 Flashを使用
+const GEMINI_CHECK_MODEL = 'gemini-3-flash-preview';
 
 interface Stage1Params {
   mainSystemPrompt: string;
@@ -72,7 +75,7 @@ const runStage1_AdTextAndOCR = async (params: Stage1Params): Promise<GeminiStage
   if (isCsvInput && adTextCsvFileContent) {
     inputTextPart = `ユーザーは広告テキストとしてCSVファイルを提供しました。内容は以下の通りです:\n\`\`\`csv\n${adTextCsvFileContent}\n\`\`\`\nこのCSVを解析し、「===== CSV_TEXT_START =====」ブロックを生成してください。`;
   } else if (hasDirectTextInput && adTextDirect) {
-    inputTextPart = `ユーザーは広告テキスト、URL、および可能性としてクライアント共有情報を含む以下のテキストを直接入力しました:\n\`\`\`\n${adTextDirect}\n\`\`\`\nこのテキストを処理し、「===== CSV_TEXT_START =====」ブロックを生成し、検出されたURLとクライアント情報をリストアップしてください。`;
+    inputTextPart = `ユーザーは広告テキスト、URL、および可能性としてクライアント共有情報を含む以下のテキストを直接入力しました:\n\`\`\`\n${adTextDirect}\n\`\`\`\nこのテキストを処理し、「===== CSV_TEXT_START =====」ブロックを生成し、検出されたURLとクライアント情報をリストアップしてください。\n\n**重要**: 広告テキスト内に含まれるURLは、広告内容の一部として表示するのみで、事実確認用のreference_urlには追加しないでください。事実確認用のURLは、ユーザーが別途「参照URL」フィールドに入力したもののみを使用します。`;
   } else {
     inputTextPart = "ユーザーはCSVファイルもテキスト直接入力も行いませんでした。広告テキスト画像が提供されている場合は、それらが主要なテキストソースとなる可能性があります。「===== CSV_TEXT_START =====」ブロックは空または広告テキスト画像の内容に基づいて適切に処理してください。";
   }
@@ -220,6 +223,7 @@ ${finalAdText}
    
    **ステップ3-1: 参照URLからの情報取得（優先）**
    - \`referenceUrls\` で指定されたURLの内容を検索ツールを使ってアクセス・分析（スクレイピング）してください。
+   - URL contextツールを使用してそれらのURLの内容を取得・分析してください。プロンプト内に含まれるURLは自動的に取得されます。
    - URLの内容を取得し、テキスト情報を抽出してください。
    
    **ステップ3-2: 情報不足時の補完検索（自動判定）**
@@ -241,7 +245,7 @@ ${finalAdText}
    - 参照URLから成分情報が取得できない場合
      → 広告テキストから「商品名 + 成分」で検索
    
-   **注意:** 参照URLから十分な情報が取得できた場合は、補完検索は不要です。情報が不十分な場合のみ補完検索を実行してください。
+   **注意:** 参照URLから十分な情報が取得できた場合は、補完検索は不要です。情報が不十分な場合のみ補完検索を実行してください。取得した内容を事実確認の根拠として使用してください。
    
 3. 最後に、ステップ3で得られた事実情報データベース（参照URL情報 + 補完検索情報）と生成された \`ad_text\` を使用して、ステップ4（チェックリスト評価＆最終レポート）を実行してください。このステップでは、追加されたナレッジベース（①、②、③）を厳密に使用してください。
 4. **【画像ダイレクトチェック】** 今回は「広告テキスト」だけでなく「広告クリエイティブ画像」も同時に提供しています。テキストOCRの結果だけでなく、**画像そのものを視覚的に分析**し、デザイン上の問題点（視認性、誤認させる配置など）や、テキストには含まれないが画像に含まれる文言のリーガルチェックも行ってください。
@@ -295,9 +299,6 @@ ${contextMessage}`;
     });
   }
 
-  // Add the text prompt
-  contents.push({ text: fullPromptForStage2 });
-
   // APIキーのチェック
   if (!apiKey) {
     const errorMessage = [
@@ -318,24 +319,159 @@ ${contextMessage}`;
     throw new Error(errorMessage);
   }
 
+  let step3FactBase = ''; // ステップ3の結果を保存
+
+  // ステップ3: 事実確認（URL contextツール使用、Gemini 2.5 Flash）
+  if (referenceUrls && referenceUrls.trim()) {
+    // カンマ区切りまたは改行区切りのURLをパース
+    const urls = referenceUrls
+      .split(/[,\n]/)
+      .map(url => url.trim())
+      .filter(url => url && (url.startsWith('http://') || url.startsWith('https://')));
+    
+    if (urls.length > 0) {
+      // ステップ3用のプロンプト（事実確認のみ）
+      const step3Prompt = `${mainSystemPrompt}
+
+${contextMessage}
+
+これから、ステップ3（事実情報取得）を実行してください。
+**【重要】** 以下の参照URLの内容をURL contextツールを使用して取得・分析し、事実情報データベースを作成してください。
+
+参照URL:
+${urls.map(url => `- ${url}`).join('\n')}
+
+ステップ3の結果のみを出力してください（ステップ4には進まないでください）。`;
+
+      const step3Contents: Part[] = [];
+      
+      // 画像も含める（事実確認に必要）
+      if (adTextImagesBase64 && adTextImagesBase64.length > 0) {
+        adTextImagesBase64.forEach(base64Str => {
+          const mimeTypeMatch = base64Str.match(/^data:(image\/(?:png|jpeg|webp));base64,/);
+          if (mimeTypeMatch) {
+            const mimeType = mimeTypeMatch[1];
+            const base64Data = base64Str.substring(mimeTypeMatch[0].length);
+            step3Contents.push({ inlineData: { mimeType, data: base64Data } });
+          }
+        });
+      }
+      if (adCreativeImagesBase64 && adCreativeImagesBase64.length > 0) {
+        adCreativeImagesBase64.forEach(base64Str => {
+          const mimeTypeMatch = base64Str.match(/^data:(image\/(?:png|jpeg|webp));base64,/);
+          if (mimeTypeMatch) {
+            const mimeType = mimeTypeMatch[1];
+            const base64Data = base64Str.substring(mimeTypeMatch[0].length);
+            step3Contents.push({ inlineData: { mimeType, data: base64Data } });
+          }
+        });
+      }
+      
+      step3Contents.push({ text: step3Prompt });
+
+      try {
+        const step3Response: GenerateContentResponse = await ai.models.generateContent({
+          model: GEMINI_FACT_CHECK_MODEL,
+          contents: step3Contents,
+          config: {
+            tools: [{urlContext: {}}],
+          }
+        });
+        step3FactBase = step3Response.text;
+      } catch (e) {
+        console.error("Gemini API ステージ2（ステップ3: 事実確認）でのエラー:", e);
+        if (e instanceof Error) {
+          throw new Error(`Gemini API リクエスト失敗 (ステージ2-ステップ3): ${e.message}`);
+        }
+        throw new Error("不明な Gemini API エラー (ステージ2-ステップ3)");
+      }
+    }
+  }
+
+  // ステップ4: リーガルチェック（Gemini 3 Flash）
+  const step4Prompt = `${mainSystemPrompt}
+
+${knowledgeBase1}
+
+${knowledgeBase2}
+
+${knowledgeBase3}
+
+${knowledgeBase4}
+**※上記のナレッジベース④は、広告対象が「金融業界（特にローン・貸金・カードローンなど）」である場合のみ適用してください。それ以外の業界の場合は、このナレッジベース④は完全に無視してください。**
+
+${knowledgeBase5}
+**※上記のナレッジベース⑤は、広告対象が「化粧品」「健康食品」「美容関連」など、薬機法（旧薬事法）や景品表示法の対象となる商材の場合のみ適用してください。それ以外の業界の場合は、このナレッジベース⑤は完全に無視してください。**
+
+${knowledgeBase6}
+**※上記のナレッジベース⑥は、広告対象が「医療機関」「クリニック」「歯科」「美容外科」など、医療法・医療広告ガイドラインの対象となる商材の場合のみ適用してください。それ以外の業界の場合は、このナレッジベース⑥は完全に無視してください。**
+
+${contextMessage}
+
+${step3FactBase ? `\n\n【ステップ3の結果（事実情報データベース）】\n${step3FactBase}\n` : ''}
+
+**特に「KNOWLEDGE_BASE_2_LINE_GUIDELINES」（LINE広告審査ガイドライン）のチェックに関して、以下の指示を厳守してください:**
+- ガイドライン内のNG例（例: 「公式LINEアカウント」など）は、あくまで「このような表記がNGである」というルールの説明です。これらがユーザーの \`ad_text\` 内に存在すると早合点しないでください。
+- **ユーザー提供の \`ad_text\` 内に、ガイドライン違反の具体的な文言が実際に存在する場合にのみ、「NG」として指摘してください。**
+- **NGと判断した場合、必ず「指摘事項」の列に、\`ad_text\` から問題のある箇所を正確に引用してください。引用なしに一般的な指摘（例：「『公式LINEアカウント』という表記があります」など）をしないでください。\`ad_text\` 内に該当する具体的な文言が見つからない場合は、その項目はNGとして指摘しないでください。**
+- 例えば、\`ad_text\` に「LINE」という単語しか含まれていない場合、「LINE公式アカウント」という具体的なNG表記が存在しない限り、関連する指摘を行うべきではありません。
+- 提供された \`ad_text\` の内容を注意深く確認し、思い込みや早合点をせず、実際に書かれていることのみを評価対象としてください。
+
+これから、ステップ4（チェックリスト評価＆最終レポート）を実行してください。
+${step3FactBase ? '上記のステップ3の結果（事実情報データベース）と生成された \`ad_text\` を使用して、' : '生成された \`ad_text\` を使用して、'}チェックリスト評価＆最終レポートを生成してください。
+このステップでは、追加されたナレッジベース（①、②、③）を厳密に使用してください。
+
+**【画像ダイレクトチェック】** 今回は「広告テキスト」だけでなく「広告クリエイティブ画像」も同時に提供しています。テキストOCRの結果だけでなく、**画像そのものを視覚的に分析**し、デザイン上の問題点（視認性、誤認させる配置など）や、テキストには含まれないが画像に含まれる文言のリーガルチェックも行ってください。
+
+元のシステムプロンプトで指定された通り、ステップ4の完全な最終レポートを出力してください。`;
+
+  // Add images to Stage 2 call for direct visual checking
+  if (adTextImagesBase64 && adTextImagesBase64.length > 0) {
+    adTextImagesBase64.forEach(base64Str => {
+      const mimeTypeMatch = base64Str.match(/^data:(image\/(?:png|jpeg|webp));base64,/);
+      if (mimeTypeMatch) {
+        const mimeType = mimeTypeMatch[1];
+        const base64Data = base64Str.substring(mimeTypeMatch[0].length);
+        contents.push({ inlineData: { mimeType, data: base64Data } });
+      }
+    });
+  }
+  if (adCreativeImagesBase64 && adCreativeImagesBase64.length > 0) {
+    adCreativeImagesBase64.forEach(base64Str => {
+      const mimeTypeMatch = base64Str.match(/^data:(image\/(?:png|jpeg|webp));base64,/);
+      if (mimeTypeMatch) {
+        const mimeType = mimeTypeMatch[1];
+        const base64Data = base64Str.substring(mimeTypeMatch[0].length);
+        contents.push({ inlineData: { mimeType, data: base64Data } });
+      }
+    });
+  }
+
+  // Add the text prompt for step 4
+  contents.push({ text: step4Prompt });
+
   try {
     const response: GenerateContentResponse = await ai.models.generateContent({
-        model: GEMINI_CHECK_MODEL,
-        contents: contents, // Passing both images and text
-        config: { // リアルタイムでのウェブ情報取得のためにGoogle Searchツールを有効化
-          tools: [{googleSearch: {}}],
-        }
+        model: GEMINI_CHECK_MODEL, // Gemini 3 Flash
+        contents: contents,
+        // URL contextツールは使用しない（ステップ4はリーガルチェックのみ）
     });
+    
+    // ステップ3の結果も含めて返す
+    const finalText = step3FactBase 
+      ? `===== ステップ3: 事実情報取得 =====\n${step3FactBase}\n\n===== ステップ4: チェックリスト評価＆最終レポート =====\n${response.text}`
+      : response.text;
+    
     return { 
-      text: response.text,
+      text: finalText,
       groundingMetadata: response.candidates?.[0]?.groundingMetadata as GroundingMetadata
     };
   } catch (e) {
-    console.error("Gemini API ステージ2でのエラー:", e);
+    console.error("Gemini API ステージ2（ステップ4: リーガルチェック）でのエラー:", e);
     if (e instanceof Error) {
-        throw new Error(`Gemini API リクエスト失敗 (ステージ2): ${e.message}`);
+        throw new Error(`Gemini API リクエスト失敗 (ステージ2-ステップ4): ${e.message}`);
     }
-    throw new Error("不明な Gemini API エラー (ステージ2)");
+    throw new Error("不明な Gemini API エラー (ステージ2-ステップ4)");
   }
 };
 
