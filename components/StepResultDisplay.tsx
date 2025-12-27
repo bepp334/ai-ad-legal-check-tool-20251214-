@@ -493,6 +493,7 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
             </button>
           </div>
           {copyStatus && <p className="text-center text-sm text-green-400 mt-2">{copyStatus}</p>}
+          </div>
         </div>
       }
       
