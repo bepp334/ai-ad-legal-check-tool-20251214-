@@ -174,8 +174,13 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
     updateStepData('step2CorrectedOcrText', event.target.value);
   };
   
-  // 画像をリサイズしてbase64に変換する関数（Notionの制限に対応）
-  const resizeImageForNotion = async (base64String: string, maxWidth: number = 800, maxHeight: number = 800, quality: number = 0.7): Promise<string> => {
+  // 画像をリサイズしてbase64に変換する関数（Notionの制限に対応：テキスト+全画像で500KB~1MB）
+  // ファイルサイズ（容量）を直接制御
+  const resizeImageForNotion = async (
+    base64String: string, 
+    totalImages: number = 1,
+    targetSizeKB: number = 100 // 1画像あたりの目標サイズ（KB）
+  ): Promise<string> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
@@ -183,9 +188,16 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
         let width = img.width;
         let height = img.height;
         
+        // 画像数に応じて目標サイズを調整（全画像で合計500KB~1MBを目指す）
+        const adjustedTargetSizeKB = totalImages > 4 ? 50 : totalImages > 2 ? 75 : targetSizeKB;
+        const maxSizeBytes = adjustedTargetSizeKB * 1024; // KBをバイトに変換
+        
+        // 画像数が多い場合、解像度も小さくする
+        const maxDimension = totalImages > 4 ? 200 : totalImages > 2 ? 250 : 300;
+        
         // アスペクト比を保ちながらリサイズ
-        if (width > maxWidth || height > maxHeight) {
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
+        if (width > maxDimension || height > maxDimension) {
+          const ratio = Math.min(maxDimension / width, maxDimension / height);
           width = width * ratio;
           height = height * ratio;
         }
@@ -200,10 +212,48 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
         
         ctx.drawImage(img, 0, 0, width, height);
         
-        // JPEG形式で圧縮（Notionに適した形式）
-        const mimeType = 'image/jpeg';
-        const resizedBase64 = canvas.toDataURL(mimeType, quality);
-        resolve(resizedBase64);
+        // 品質を段階的に下げながら、目標ファイルサイズに達するまで圧縮
+        const tryCompress = (quality: number): string | null => {
+          const mimeType = 'image/jpeg';
+          const base64 = canvas.toDataURL(mimeType, quality);
+          
+          // base64のサイズを計算（データ部分のみ）
+          const base64Data = base64.split(',')[1];
+          const sizeBytes = (base64Data.length * 3) / 4; // base64は約4/3のサイズ
+          
+          if (sizeBytes <= maxSizeBytes || quality <= 0.1) {
+            return base64;
+          }
+          return null;
+        };
+        
+        // 品質を段階的に下げて試行
+        let quality = 0.5;
+        let result: string | null = null;
+        
+        while (quality >= 0.1 && !result) {
+          result = tryCompress(quality);
+          if (!result) {
+            quality -= 0.1;
+          }
+        }
+        
+        // それでも大きい場合は、さらに解像度を下げる
+        if (!result || (result && ((result.split(',')[1].length * 3) / 4) > maxSizeBytes * 1.5)) {
+          // 解像度をさらに下げる
+          const smallerDimension = Math.max(150, maxDimension * 0.7);
+          const ratio = Math.min(smallerDimension / width, smallerDimension / height);
+          width = width * ratio;
+          height = height * ratio;
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // 低品質で再圧縮
+          result = canvas.toDataURL('image/jpeg', 0.2);
+        }
+        
+        resolve(result || canvas.toDataURL('image/jpeg', 0.1));
       };
       img.onerror = reject;
       img.src = base64String;
@@ -244,6 +294,9 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
         const hasCreativeImages = userInput.adCreativeImagesBase64 && userInput.adCreativeImagesBase64.length > 0;
         
         if (hasAdTextImages || hasCreativeImages) {
+          // 総画像数を計算（リサイズ時の調整に使用）
+          const totalImageCount = (userInput.adTextImagesBase64?.length || 0) + (userInput.adCreativeImagesBase64?.length || 0);
+          
           fullReportHtml += '<h2>入力画像</h2>';
           
           if (hasAdTextImages) {
@@ -251,7 +304,7 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
             for (let index = 0; index < userInput.adTextImagesBase64.length; index++) {
               const base64 = userInput.adTextImagesBase64[index];
               try {
-                const resizedBase64 = await resizeImageForNotion(base64);
+                const resizedBase64 = await resizeImageForNotion(base64, totalImageCount);
                 fullReportHtml += `<img src="${resizedBase64}" alt="広告テキスト画像 ${index + 1}" style="max-width: 300px; max-height: 300px; border: 1px solid #ccc; margin: 5px;" />`;
               } catch (err) {
                 console.warn(`画像 ${index + 1} のリサイズに失敗しました。元の画像を使用します。`, err);
@@ -266,7 +319,7 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
             for (let index = 0; index < userInput.adCreativeImagesBase64.length; index++) {
               const base64 = userInput.adCreativeImagesBase64[index];
               try {
-                const resizedBase64 = await resizeImageForNotion(base64);
+                const resizedBase64 = await resizeImageForNotion(base64, totalImageCount);
                 fullReportHtml += `<img src="${resizedBase64}" alt="広告クリエイティブ画像 ${index + 1}" style="max-width: 300px; max-height: 300px; border: 1px solid #ccc; margin: 5px;" />`;
               } catch (err) {
                 console.warn(`画像 ${index + 1} のリサイズに失敗しました。元の画像を使用します。`, err);

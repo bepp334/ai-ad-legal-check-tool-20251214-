@@ -331,7 +331,8 @@ ${contextMessage}`;
 
   let step3FactBase = ''; // ステップ3の結果を保存
 
-  // ステップ3: 事実確認（URL contextツール使用、Gemini 2.5 Flash）
+  // ステップ3: 事実確認（URL contextツール + Google検索ツール使用、Gemini 2.5 Flash）
+  // 参照URLが提供されている場合
   if (referenceUrls && referenceUrls.trim()) {
     // カンマ区切りまたは改行区切りのURLをパース
     const urls = referenceUrls
@@ -346,10 +347,41 @@ ${contextMessage}`;
 ${contextMessage}
 
 これから、ステップ3（事実情報取得）を実行してください。
-**【重要】** 以下の参照URLの内容をURL contextツールを使用して取得・分析し、事実情報データベースを作成してください。
+
+**【重要】参照URLからの情報取得と補完検索の手順:**
+
+**ステップ3-1: 参照URLからの情報取得（優先）**
+- 以下の参照URLの内容をURL contextツールを使用して取得・分析してください。
+- URLの内容を取得し、テキスト情報を抽出してください。
 
 参照URL:
 ${urls.map(url => `- ${url}`).join('\n')}
+
+**ステップ3-2: 情報不足時の補完検索（自動判定）**
+- 参照URLから取得した情報を評価してください。以下の場合、情報が不十分と判断してください：
+  * 取得したテキストが極めて少ない（100文字未満など）
+  * 情報が画像形式で埋め込まれており、テキストとして抽出できない
+  * 価格、成分、仕様などの重要な情報が取得できていない
+  * URLの内容が主に画像や動画のみで構成されている
+
+- **情報が不十分と判断した場合のみ**、以下の手順で補完検索を実行してください：
+  1. \`ad_text\` から重要なキーワードを抽出（商品名、ブランド名、サービス名など）
+  2. 抽出したキーワードと、必要な情報の種類（例：「価格」「成分」「仕様」「キャンペーン条件」など）を組み合わせて検索クエリを生成
+  3. **Google検索ツール（googleSearch）を使用して**、補完情報を取得してください
+  4. 取得した補完情報を参照URLの情報と統合して、事実情報データベースを構築
+
+**例:**
+- 参照URLが画像のみのLPで情報が取得できない場合
+  → 広告テキストから「商品名 + 価格」でGoogle検索を実行
+- 参照URLから成分情報が取得できない場合
+  → 広告テキストから「商品名 + 成分」でGoogle検索を実行
+
+**注意:** 参照URLから十分な情報が取得できた場合は、補完検索は不要です。情報が不十分な場合のみ補完検索を実行してください。
+
+**【最重要】事実確認ができない場合の処理:**
+- クライアント共有情報、URL情報、補完検索情報の全てが取得できない場合、広告テキストの内容を「正しいもの」として扱ってはいけません。
+- この場合、「結果値」欄には「❌ 事実確認不可（参照情報なし）」と明記してください。
+- 広告テキストに記載されている内容をそのまま「結果値」として記載することは絶対に禁止です。
 
 ステップ3の結果のみを出力してください（ステップ4には進まないでください）。`;
 
@@ -384,12 +416,81 @@ ${urls.map(url => `- ${url}`).join('\n')}
           model: GEMINI_FACT_CHECK_MODEL,
           contents: step3Contents,
           config: {
-            tools: [{urlContext: {}}],
+            // URL contextツールとGoogle検索ツールの両方を使用（補完検索のため）
+            tools: [
+              {urlContext: {}},
+              {googleSearch: {}} // 補完検索用のGoogle検索ツール
+            ],
           }
         });
         step3FactBase = step3Response.text;
       } catch (e) {
         console.error("Gemini API ステージ2（ステップ3: 事実確認）でのエラー:", e);
+        if (e instanceof Error) {
+          throw new Error(`Gemini API リクエスト失敗 (ステージ2-ステップ3): ${e.message}`);
+        }
+        throw new Error("不明な Gemini API エラー (ステージ2-ステップ3)");
+      }
+    } else {
+      // 参照URLが提供されていない場合でも、Google検索で補完情報を取得
+      const step3PromptNoUrl = `${mainSystemPrompt}
+
+${contextMessage}
+
+これから、ステップ3（事実情報取得）を実行してください。
+
+**【重要】参照URLが提供されていないため、Google検索ツール（googleSearch）を使用して補完情報を取得してください。**
+
+**補完検索の実行方法:**
+1. \`ad_text\` から重要なキーワードを抽出（商品名、ブランド名、サービス名など）
+2. 抽出したキーワードと、必要な情報の種類（例：「価格」「成分」「仕様」「キャンペーン条件」など）を組み合わせて検索クエリを生成
+3. **Google検索ツール（googleSearch）を使用して**、補完情報を取得してください
+4. 取得した補完情報を事実情報データベースとして構築
+
+**【最重要】事実確認ができない場合の処理:**
+- クライアント共有情報、補完検索情報の全てが取得できない場合、広告テキストの内容を「正しいもの」として扱ってはいけません。
+- この場合、「結果値」欄には「❌ 事実確認不可（参照情報なし）」と明記してください。
+
+ステップ3の結果のみを出力してください（ステップ4には進まないでください）。`;
+
+      const step3ContentsNoUrl: Part[] = [];
+      
+      // 画像も含める（事実確認に必要）
+      if (adTextImagesBase64 && adTextImagesBase64.length > 0) {
+        adTextImagesBase64.forEach(base64Str => {
+          const mimeTypeMatch = base64Str.match(/^data:(image\/(?:png|jpeg|webp));base64,/);
+          if (mimeTypeMatch) {
+            const mimeType = mimeTypeMatch[1];
+            const base64Data = base64Str.substring(mimeTypeMatch[0].length);
+            step3ContentsNoUrl.push({ inlineData: { mimeType, data: base64Data } });
+          }
+        });
+      }
+      if (adCreativeImagesBase64 && adCreativeImagesBase64.length > 0) {
+        adCreativeImagesBase64.forEach(base64Str => {
+          const mimeTypeMatch = base64Str.match(/^data:(image\/(?:png|jpeg|webp));base64,/);
+          if (mimeTypeMatch) {
+            const mimeType = mimeTypeMatch[1];
+            const base64Data = base64Str.substring(mimeTypeMatch[0].length);
+            step3ContentsNoUrl.push({ inlineData: { mimeType, data: base64Data } });
+          }
+        });
+      }
+      
+      step3ContentsNoUrl.push({ text: step3PromptNoUrl });
+
+      try {
+        const step3ResponseNoUrl: GenerateContentResponse = await ai.models.generateContent({
+          model: GEMINI_FACT_CHECK_MODEL,
+          contents: step3ContentsNoUrl,
+          config: {
+            // 参照URLがない場合でもGoogle検索ツールを使用
+            tools: [{googleSearch: {}}],
+          }
+        });
+        step3FactBase = step3ResponseNoUrl.text;
+      } catch (e) {
+        console.error("Gemini API ステージ2（ステップ3: 事実確認・補完検索）でのエラー:", e);
         if (e instanceof Error) {
           throw new Error(`Gemini API リクエスト失敗 (ステージ2-ステップ3): ${e.message}`);
         }
