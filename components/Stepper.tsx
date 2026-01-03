@@ -51,43 +51,43 @@ export const Stepper: React.FC<StepperProps> = ({ currentStep }) => {
               {status === 'completed' ? (
                 <>
                   <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                    <div className={`h-0.5 w-full ${currentStep === AdCheckStep.Error && step.id >= (currentStep -1) ? 'bg-blue-200' : 'bg-blue-500'}`} />
+                    <div className={`h-0.5 w-full ${currentStep === AdCheckStep.Error && step.id >= (currentStep -1) ? 'bg-gray-300' : 'bg-blue-600'}`} />
                   </div>
                   <div
-                    className={`relative flex h-10 w-10 items-center justify-center rounded-full ${currentStep === AdCheckStep.Error && step.id >= (currentStep -1) ? 'bg-blue-100 border-2 border-blue-300' : 'bg-blue-500 hover:bg-blue-600 shadow-md'}`}
+                    className={`relative flex h-10 w-10 items-center justify-center rounded-full ${currentStep === AdCheckStep.Error && step.id >= (currentStep -1) ? 'bg-gray-100 border-2 border-gray-400' : 'bg-blue-600 hover:bg-blue-700 shadow-sm'}`}
                   >
-                    {currentStep === AdCheckStep.Error && step.id >= (currentStep-1) ? <IconComponent className="h-6 w-6 text-blue-400" aria-hidden="true" /> : <CheckIcon className="h-6 w-6 text-white" aria-hidden="true" />}
+                    {currentStep === AdCheckStep.Error && step.id >= (currentStep-1) ? <IconComponent className="h-6 w-6 text-gray-500" aria-hidden="true" /> : <CheckIcon className="h-6 w-6 text-white" aria-hidden="true" />}
                     <span className="sr-only">{step.name} - 完了</span>
                   </div>
                 </>
               ) : status === 'current' ? (
                  <>
                   <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                    <div className="h-0.5 w-full bg-blue-200" />
+                    <div className="h-0.5 w-full bg-gray-300" />
                   </div>
                   <div
-                    className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 ${currentStep === AdCheckStep.Error ? 'border-red-500 bg-red-100' : 'border-blue-500 bg-white shadow-lg'}`}
+                    className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 ${currentStep === AdCheckStep.Error ? 'border-red-500 bg-red-50' : 'border-blue-600 bg-white shadow-md'}`}
                     aria-current="step"
                   >
-                     {currentStep === AdCheckStep.Error ? <IconComponent className="h-6 w-6 text-red-500" aria-hidden="true" /> : <span className="h-3 w-3 rounded-full bg-blue-500" aria-hidden="true" />}
+                     {currentStep === AdCheckStep.Error ? <IconComponent className="h-6 w-6 text-red-500" aria-hidden="true" /> : <span className="h-3 w-3 rounded-full bg-blue-600" aria-hidden="true" />}
                      <span className="sr-only">{step.name} - 現在</span>
                   </div>
                 </>
               ) : ( // upcoming
                 <>
                   <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                    <div className="h-0.5 w-full bg-blue-200" />
+                    <div className="h-0.5 w-full bg-gray-300" />
                   </div>
                   <div
-                    className="group relative flex h-10 w-10 items-center justify-center rounded-full border-2 border-blue-300 bg-white hover:border-blue-400 shadow-sm"
+                    className="group relative flex h-10 w-10 items-center justify-center rounded-full border-2 border-gray-300 bg-white hover:border-gray-400 shadow-sm"
                   >
                      {/* Using the step's own icon for upcoming steps */}
-                     <IconComponent className="h-5 w-5 text-blue-400 group-hover:text-blue-500" aria-hidden="true" />
+                     <IconComponent className="h-5 w-5 text-gray-400 group-hover:text-gray-600" aria-hidden="true" />
                      <span className="sr-only">{step.name} - 未完了</span>
                   </div>
                 </>
               )}
-               <p className={`mt-2 text-xs text-center ${(status === 'completed' && !(currentStep === AdCheckStep.Error && step.id >= (currentStep -1)) ) || status === 'current' ? 'font-semibold text-blue-600' : 'text-blue-500'}`}>{step.name}</p>
+               <p className={`mt-2 text-xs text-center ${(status === 'completed' && !(currentStep === AdCheckStep.Error && step.id >= (currentStep -1)) ) || status === 'current' ? 'font-semibold text-gray-900' : 'text-gray-600'}`}>{step.name}</p>
             </li>
           );
         })}

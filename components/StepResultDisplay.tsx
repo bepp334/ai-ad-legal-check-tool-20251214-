@@ -188,7 +188,7 @@ const RenderMarkdownReport: React.FC<{ report: string }> = React.memo(({ report 
       function flushParagraph(keySuffix: string | number) {
     if (currentParagraphLines.length > 0) {
       elements.push(
-        <pre key={`p-${keySuffix}-${elements.length}`} className="whitespace-pre-wrap break-words text-sm text-blue-900 bg-blue-50 p-3 rounded-md shadow leading-relaxed mb-3 border border-blue-200">
+        <pre key={`p-${keySuffix}-${elements.length}`} className="whitespace-pre-wrap break-words text-sm text-gray-800 bg-gray-50 p-3 rounded-md shadow-sm leading-relaxed mb-3 border border-gray-200">
           {currentParagraphLines.join('\n')}
         </pre>
       );
@@ -202,8 +202,8 @@ const RenderMarkdownReport: React.FC<{ report: string }> = React.memo(({ report 
       if (tableData && tableData.length > 0 && Object.keys(tableData[0]).length > 0) {
         elements.push(
           <div key={`table-wrapper-${keySuffix}-${elements.length}`} className="overflow-x-auto mb-4">
-            <table className="min-w-full divide-y divide-blue-200 border-2 border-blue-300 border-collapse text-xs sm:text-sm">
-              <thead className="bg-blue-500">
+            <table className="min-w-full divide-y divide-gray-200 border border-gray-300 border-collapse text-xs sm:text-sm">
+              <thead className="bg-blue-600">
                 <tr>
                   {Object.keys(tableData[0]).map((header, hIdx) => (
                     <th key={`${header}-${hIdx}`} scope="col" className="px-3 py-2 text-left font-semibold text-white uppercase tracking-wider">
@@ -212,11 +212,11 @@ const RenderMarkdownReport: React.FC<{ report: string }> = React.memo(({ report 
                   ))}
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-blue-200">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {tableData.map((row, rowIndex) => (
-                  <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-blue-50'}>
+                  <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                     {Object.values(row).map((cell, cellIndex) => (
-                      <td key={cellIndex} className="px-3 py-2 whitespace-pre-wrap text-blue-900 break-words">
+                      <td key={cellIndex} className="px-3 py-2 whitespace-pre-wrap text-gray-800 break-words">
                         {cell}
                       </td>
                     ))}
@@ -239,11 +239,11 @@ const RenderMarkdownReport: React.FC<{ report: string }> = React.memo(({ report 
     if (line.startsWith('## ')) {
       flushParagraph(i);
       flushTable(i);
-      elements.push(<h2 key={`h2-${i}-${elements.length}`} className="text-2xl font-bold text-blue-600 mt-6 mb-3">{line.substring(3)}</h2>);
+      elements.push(<h2 key={`h2-${i}-${elements.length}`} className="text-2xl font-bold text-gray-900 mt-6 mb-3">{line.substring(3)}</h2>);
     } else if (line.startsWith('### ')) {
       flushParagraph(i);
       flushTable(i);
-      elements.push(<h3 key={`h3-${i}-${elements.length}`} className="text-xl font-semibold text-blue-500 mt-4 mb-2">{line.substring(4)}</h3>);
+      elements.push(<h3 key={`h3-${i}-${elements.length}`} className="text-xl font-semibold text-blue-600 mt-4 mb-2">{line.substring(4)}</h3>);
     } else if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
       flushParagraph(i); 
       currentTableLines.push(line);
@@ -556,9 +556,9 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
     const content = dataArray.join('\n\n---\n\n');
 
     return (
-      <div className="mb-6 p-4 border-2 border-blue-300 rounded-lg bg-blue-50">
-        <h3 className="text-xl font-semibold text-blue-600 mb-3">{title}</h3>
-        <pre className="whitespace-pre-wrap break-words text-sm text-blue-900 bg-white p-3 rounded-md shadow leading-relaxed border border-blue-200">{content}</pre>
+      <div className="mb-6 p-4 border border-gray-300 rounded-lg bg-white shadow-sm">
+        <h3 className="text-xl font-semibold text-gray-900 mb-3">{title}</h3>
+        <pre className="whitespace-pre-wrap break-words text-sm text-gray-800 bg-gray-50 p-3 rounded-md shadow-sm leading-relaxed border border-gray-200">{content}</pre>
       </div>
     );
   };
@@ -576,11 +576,11 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
       }
 
       { showStep2 && (
-        <div className="mb-6 p-4 border-2 border-blue-300 rounded-lg bg-blue-50">
-          <h3 className="text-xl font-semibold text-blue-600 mb-3">ステップ2: OCR結果</h3>
+        <div className="mb-6 p-4 border border-gray-300 rounded-lg bg-white shadow-sm">
+          <h3 className="text-xl font-semibold text-gray-900 mb-3">ステップ2: OCR結果</h3>
           {currentAppStep === AdCheckStep.OCRVerification || (currentAppStep === AdCheckStep.ReviewStep1Step2 && step2NeedsVerification) ? (
             <>
-              <p className="text-amber-600 mb-2 text-sm font-medium">
+              <p className="text-amber-700 mb-2 text-sm font-medium bg-amber-50 p-3 rounded-md border border-amber-200">
                 OCR処理により、いくつかの曖昧な箇所が特定されました。必要に応じて以下のテキストを確認・修正してください。
                 （システムプロンプトでは「[不明箇所1]: 何と記載されていますか？」といった質問形式が指定されていますが、
                 このUIでは簡略化のため、下のテキストエリアでOCRテキスト全体を直接編集して修正してください。）
@@ -589,18 +589,18 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
                 value={editableOcrText}
                 onChange={handleOcrTextChange}
                 rows={10}
-                className="w-full p-3 bg-white border-2 border-blue-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-blue-900 placeholder-blue-400"
+                className="w-full p-3 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
                 aria-label="編集可能なOCRテキスト"
               />
               <button
                 onClick={onOcrVerificationSubmit}
-                className="mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg"
+                className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-150 ease-in-out shadow-sm hover:shadow-md"
               >
                 OCRテキストを確定
               </button>
             </>
           ) : (
-            <pre className="whitespace-pre-wrap break-words text-sm text-blue-900 bg-white p-3 rounded-md shadow leading-relaxed border border-blue-200">
+            <pre className="whitespace-pre-wrap break-words text-sm text-gray-800 bg-gray-50 p-3 rounded-md shadow-sm leading-relaxed border border-gray-200">
                 {getStepData('step2CorrectedOcrText') || getStepData('step2RawOcrText')}
             </pre>
           )}
@@ -610,7 +610,7 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
       { currentAppStep === AdCheckStep.ReviewStep1Step2 && !step2NeedsVerification && (
          <button
             onClick={onProceedToFinalProcessing}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition duration-150 ease-in-out text-lg shadow-md hover:shadow-lg"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-150 ease-in-out text-lg shadow-sm hover:shadow-md"
           >
             事実確認と最終レポート作成へ進む
         </button>
@@ -618,14 +618,14 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
 
 
       { showStep3 && 
-         <div className="mb-6 p-4 border-2 border-blue-300 rounded-lg bg-blue-50">
-          <h3 className="text-xl font-semibold text-blue-600 mb-3">ステップ3: 事実確認サマリー</h3>
+         <div className="mb-6 p-4 border border-gray-300 rounded-lg bg-white shadow-sm">
+          <h3 className="text-xl font-semibold text-gray-900 mb-3">ステップ3: 事実確認サマリー</h3>
            <RenderMarkdownReport report={getStepData('step3FactBase')!} />
            
            {/* Grounding Sources Section */}
            {groundingMetadata && groundingMetadata.groundingChunks && groundingMetadata.groundingChunks.length > 0 && (
-             <div className="mt-6 pt-4 border-t-2 border-blue-300">
-               <h4 className="text-sm font-semibold text-blue-700 mb-3">📚 参照されたWebソース (Google Search Grounding)</h4>
+             <div className="mt-6 pt-4 border-t border-gray-300">
+               <h4 className="text-sm font-semibold text-gray-700 mb-3">📚 参照されたWebソース (Google Search Grounding)</h4>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                  {groundingMetadata.groundingChunks.map((chunk, idx) => (
                    chunk.web ? (
@@ -634,10 +634,10 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
                        href={chunk.web.uri} 
                        target="_blank" 
                        rel="noopener noreferrer" 
-                       className="flex items-center p-2 rounded-lg bg-blue-100 hover:bg-blue-200 transition-colors text-xs text-blue-700 group border border-blue-300"
+                       className="flex items-center p-2 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors text-xs text-blue-700 group border border-blue-200 shadow-sm"
                      >
                        <span className="flex-1 truncate mr-2 font-medium">{chunk.web.title || chunk.web.uri}</span>
-                       <span className="text-blue-500 group-hover:text-blue-700">↗</span>
+                       <span className="text-blue-600 group-hover:text-blue-800">↗</span>
                      </a>
                    ) : null
                  ))}
@@ -648,17 +648,17 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
       }
 
       { showStep4 && 
-        <div className="mb-6 p-4 border-2 border-blue-300 rounded-lg bg-blue-50">
-          <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-500 mb-4 text-center">ステップ4: 最終広告チェックレポート</h2>
+        <div className="mb-6 p-4 border border-gray-300 rounded-lg bg-white shadow-sm">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4 text-center">ステップ4: 最終広告チェックレポート</h2>
           <RenderMarkdownReport report={getStepData('step4FinalReport')!} />
           <div className="mt-6 space-y-4">
             {/* Notion保存案内 */}
-            <div className="bg-blue-100 border-2 border-blue-400 rounded-lg p-4 mb-4">
-              <h4 className="text-sm font-semibold text-blue-700 mb-2 flex items-center">
+            <div className="bg-blue-50 border-l-4 border-blue-600 rounded-md p-4 mb-4 shadow-sm">
+              <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
                 <span className="mr-2">📝</span>
                 Notionデータベースへの保存方法
               </h4>
-              <ol className="text-xs text-blue-800 space-y-2 list-decimal list-inside ml-2">
+              <ol className="text-xs text-gray-700 space-y-2 list-decimal list-inside ml-2">
                 <li>
                   以下のNotionURLを開いてください：
                   <br />
@@ -681,14 +681,14 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
             <div className="text-center flex flex-col sm:flex-row justify-center gap-4">
               <button
                   onClick={handleCopyToClipboard}
-                  className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-6 rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg"
+                  className="bg-white hover:bg-gray-50 text-blue-600 font-bold py-2 px-6 rounded-lg transition duration-150 ease-in-out border-2 border-blue-600 shadow-sm hover:shadow-md"
               >
                   レポートをコピー
               </button>
             <button
                 onClick={handleDownloadDocx}
                 disabled={isDownloading}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition duration-150 ease-in-out flex items-center justify-center disabled:opacity-50 shadow-md hover:shadow-lg"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition duration-150 ease-in-out flex items-center justify-center disabled:opacity-50 shadow-sm hover:shadow-md"
             >
                 {isDownloading ? (
                     <span className="flex items-center">
@@ -703,27 +703,27 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
                 )}
             </button>
           </div>
-          {copyStatus && <p className="text-center text-sm text-green-600 mt-2 font-semibold">{copyStatus}</p>}
+          {copyStatus && <p className="text-center text-sm text-green-700 mt-2 font-semibold">{copyStatus}</p>}
           </div>
         </div>
       }
       
       {currentAppStep === AdCheckStep.Error && (
-          <p className="text-center text-red-600 font-semibold">エラーが発生しました。上記メッセージおよび部分的な結果を確認してください。</p>
+          <p className="text-center text-red-700 font-semibold bg-red-50 p-3 rounded-md border border-red-200">エラーが発生しました。上記メッセージおよび部分的な結果を確認してください。</p>
       )}
       {currentAppStep === AdCheckStep.Complete && (
         <>
-          <p className="text-center text-green-600 font-semibold text-2xl py-4">🎉 広告チェック処理が正常に完了しました！ 🎉</p>
+          <p className="text-center text-green-700 font-semibold text-2xl py-4 bg-green-50 p-4 rounded-lg border border-green-200">🎉 広告チェック処理が正常に完了しました！ 🎉</p>
           {finalAdTextForRecheck && (
-            <div className="mt-8 p-4 border-2 border-amber-400 rounded-lg bg-amber-50">
-              <h3 className="text-xl font-semibold text-amber-600 mb-3">再チェック</h3>
-              <p className="text-blue-900 text-sm mb-2 font-medium">
+            <div className="mt-8 p-4 border border-gray-300 rounded-lg bg-white shadow-sm">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">再チェック</h3>
+              <p className="text-gray-700 text-sm mb-2 font-medium">
                 現在の結果に対して追加の指示やフィードバックがある場合は、以下に入力して再チェックを実行できます。
                 AIはあなたの入力を考慮して、再度評価を行います。
               </p>
-              <div className="mb-3 p-3 bg-white rounded-md border-2 border-amber-300">
-                <p className="text-sm text-amber-700 mb-2 font-semibold">入力例:</p>
-                <ul className="text-sm text-blue-900 space-y-1 list-disc list-inside">
+              <div className="mb-3 p-3 bg-gray-50 rounded-md border border-gray-200">
+                <p className="text-sm text-gray-700 mb-2 font-semibold">入力例:</p>
+                <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
                   <li>「○○の箇所は△△という解釈もできるため問題ないはずです。再検討してください。」</li>
                   <li>「最初に〇〇というクライアントからもらった非公開情報を入れ忘れてしまったのでそれを考慮して」</li>
                 </ul>
@@ -732,12 +732,12 @@ export const StepResultDisplay: React.FC<StepResultDisplayProps> = ({
                 value={recheckPrompt}
                 onChange={(e) => setRecheckPrompt(e.target.value)}
                 rows={4}
-                className="w-full p-3 bg-white border-2 border-amber-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 text-blue-900 placeholder-blue-400"
+                className="w-full p-3 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
                 placeholder="例: 「○○の箇所は△△という解釈もできるため問題ないはずです。再検討してください。」\n例: 「最初に〇〇というクライアントからもらった非公開情報を入れ忘れてしまったのでそれを考慮して」"
               />
               <button
                 onClick={onRecheck}
-                className="mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg"
+                className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-150 ease-in-out shadow-sm hover:shadow-md"
               >
                 再チェックを実行
               </button>
