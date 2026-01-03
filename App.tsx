@@ -284,18 +284,18 @@ const App: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen container mx-auto p-4 flex flex-col items-center bg-gradient-to-br from-blue-50 to-cyan-100">
+    <div className="min-h-screen container mx-auto p-4 flex flex-col items-center bg-white">
       <header className="w-full mb-8 text-center">
-        <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-500">
+        <h1 className="text-5xl font-bold text-blue-600">
           AI広告リーガルチェックツール
         </h1>
-        <p className="text-blue-600 mt-2 font-medium">広告の法的およびコンプライアンスレビューを自動化します。</p>
+        <p className="text-gray-700 mt-2 font-medium">広告の法的およびコンプライアンスレビューを自動化します。</p>
         <div className="mt-3">
           <a 
             href="https://www.notion.so/zeals-ai/AI-Ver2-2afd8ab456c081359572e583800c7b84"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-500 hover:text-blue-600 underline text-sm flex items-center justify-center gap-1 transition-colors font-semibold"
+            className="text-blue-600 hover:text-blue-700 underline text-sm flex items-center justify-center gap-1 transition-colors font-semibold"
           >
             <span>📖</span> AIチェックマニュアルはこちら (Notion)
           </a>
@@ -304,11 +304,11 @@ const App: React.FC = () => {
 
       {isLoading && <LoadingSpinner />}
 
-      <main className="w-full max-w-4xl bg-white shadow-2xl rounded-lg p-6 border-2 border-blue-200">
+      <main className="w-full max-w-4xl bg-white shadow-lg rounded-xl p-6 border border-gray-200">
         <Stepper currentStep={currentStep} />
 
         {errorMessage && (
-          <div className="bg-red-100 border-2 border-red-400 text-red-800 px-4 py-3 rounded relative mb-4" role="alert">
+          <div className="bg-red-50 border-l-4 border-red-500 text-red-800 px-4 py-3 rounded relative mb-4 shadow-sm" role="alert">
             <strong className="font-bold">エラー: </strong>
             <span className="block sm:inline">{errorMessage}</span>
           </div>
@@ -337,13 +337,13 @@ const App: React.FC = () => {
          {currentStep !== AdCheckStep.Input && (
             <button
                 onClick={() => resetState(true)}
-                className="mt-8 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-150 ease-in-out w-full shadow-md hover:shadow-lg"
+                className="mt-8 bg-white hover:bg-gray-50 text-blue-600 font-bold py-3 px-6 rounded-lg transition duration-150 ease-in-out w-full border-2 border-blue-600 shadow-sm hover:shadow-md"
             >
                 新しいチェックを開始
             </button>
         )}
       </main>
-      <footer className="w-full text-center mt-12 pb-8 text-blue-600 font-medium">
+      <footer className="w-full text-center mt-12 pb-8 text-gray-600 font-medium">
         <p>&copy; {new Date().getFullYear()} AI広告リーガルチェックツール. Powered by Gemini.</p>
       </footer>
     </div>

@@ -214,7 +214,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-blue-700 mb-2 font-semibold">
+        <label className="block text-sm font-medium text-gray-900 mb-2 font-semibold">
           広告テキスト入力方法を選択
         </label>
         <div className="flex items-center space-x-4 mb-3">
@@ -225,9 +225,9 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
               value="direct"
               checked={adTextSource === 'direct'}
               onChange={handleAdTextSourceChange}
-              className="form-radio h-4 w-4 text-blue-600 bg-white border-blue-400 focus:ring-blue-500"
+              className="form-radio h-4 w-4 text-blue-600 bg-white border-gray-300 focus:ring-blue-500"
             />
-            <span className="text-blue-900 font-medium">直接入力</span>
+            <span className="text-gray-700 font-medium">直接入力</span>
           </label>
           <label className="flex items-center space-x-2 cursor-pointer">
             <input
@@ -236,15 +236,15 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
               value="csv"
               checked={adTextSource === 'csv'}
               onChange={handleAdTextSourceChange}
-              className="form-radio h-4 w-4 text-blue-600 bg-white border-blue-400 focus:ring-blue-500"
+              className="form-radio h-4 w-4 text-blue-600 bg-white border-gray-300 focus:ring-blue-500"
             />
-            <span className="text-blue-900 font-medium">CSVファイル</span>
+            <span className="text-gray-700 font-medium">CSVファイル</span>
           </label>
         </div>
 
         {adTextSource === 'direct' && (
           <div>
-            <label htmlFor="adTextDirect" className="block text-sm font-medium text-blue-700 mb-1 font-semibold">
+            <label htmlFor="adTextDirect" className="block text-sm font-medium text-gray-900 mb-1 font-semibold">
               広告テキスト (直接入力)
             </label>
             <textarea
@@ -252,7 +252,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
               value={adTextDirect}
               onChange={(e) => setAdTextDirect(e.target.value)}
               rows={5}
-              className="w-full p-3 bg-white border-2 border-blue-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-blue-900 placeholder-blue-400"
+              className="w-full p-3 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
               placeholder="広告テキスト、URL、クライアント共有情報をここに入力します。"
             />
           </div>
@@ -260,23 +260,23 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
 
         {adTextSource === 'csv' && (
           <div>
-            <label htmlFor="adTextCsvFile" className="block text-sm font-medium text-blue-700 mb-1 font-semibold">
+            <label htmlFor="adTextCsvFile" className="block text-sm font-medium text-gray-900 mb-1 font-semibold">
               広告テキスト (CSVファイル)
             </label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-blue-300 border-dashed rounded-md bg-blue-50">
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md bg-gray-50">
               <div className="space-y-1 text-center">
-                <svg className="mx-auto h-12 w-12 text-blue-500" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
                   <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <div className="flex text-sm text-blue-600">
-                  <label htmlFor="adTextCsvFile" className="relative cursor-pointer bg-blue-500 rounded-md font-medium text-white hover:bg-blue-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-offset-blue-50 focus-within:ring-blue-500 px-3 py-1">
+                <div className="flex text-sm text-gray-600">
+                  <label htmlFor="adTextCsvFile" className="relative cursor-pointer bg-blue-600 rounded-md font-medium text-white hover:bg-blue-700 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-offset-gray-50 focus-within:ring-blue-500 px-3 py-1 shadow-sm">
                     <span>ファイルをアップロード</span>
                     <input id="adTextCsvFile" name="adTextCsvFile" type="file" className="sr-only" accept=".csv" onChange={handleCsvFileChange} />
                   </label>
                   <p className="pl-1 self-center">またはドラッグ＆ドロップ</p>
                 </div>
-                <p className="text-xs text-blue-600">CSV 最大10MB</p>
-                {csvFileName && <p className="text-sm text-blue-700 mt-2 font-medium">選択中: {csvFileName}</p>}
+                <p className="text-xs text-gray-500">CSV 最大10MB</p>
+                {csvFileName && <p className="text-sm text-gray-700 mt-2 font-medium">選択中: {csvFileName}</p>}
               </div>
             </div>
           </div>
@@ -284,7 +284,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
       </div>
       
       <div>
-        <label htmlFor="adTextImages" className="block text-sm font-medium text-blue-700 mb-1 font-semibold">
+        <label htmlFor="adTextImages" className="block text-sm font-medium text-gray-900 mb-1 font-semibold">
           広告テキスト画像 (スクリーンショット等、最大{MAX_AD_TEXT_IMAGES}枚)
         </label>
         <input
@@ -293,14 +293,14 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
           multiple
           accept="image/png, image/jpeg, image/webp"
           onChange={handleAdTextImagesChange}
-          className="w-full text-sm text-blue-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
+          className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:shadow-sm"
           disabled={adTextImages.length >= MAX_AD_TEXT_IMAGES}
         />
         {adTextImagePreviews.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2 border-2 border-blue-300 p-2 rounded-md bg-blue-50">
+          <div className="mt-2 flex flex-wrap gap-2 border border-gray-300 p-2 rounded-md bg-gray-50">
             {adTextImagePreviews.map((preview, index) => (
               <div key={index} className="relative">
-                <img src={preview} alt={`広告テキスト画像プレビュー ${index + 1}`} className="h-24 w-auto object-contain border-2 border-blue-400 rounded"/>
+                <img src={preview} alt={`広告テキスト画像プレビュー ${index + 1}`} className="h-24 w-auto object-contain border border-gray-300 rounded shadow-sm"/>
                 <button
                   type="button"
                   onClick={() => removeAdTextImage(index)}
@@ -315,10 +315,10 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
         )}
       </div>
 
-      <hr className="border-blue-300 my-4" />
+      <hr className="border-gray-300 my-4" />
 
       <div>
-        <label htmlFor="adCreativeImageFiles" className="block text-sm font-medium text-blue-700 mb-1 font-semibold">
+        <label htmlFor="adCreativeImageFiles" className="block text-sm font-medium text-gray-900 mb-1 font-semibold">
           広告クリエイティブ画像 (PNG, JPGなど、最大{MAX_AD_CREATIVE_IMAGES}枚)
         </label>
         <input
@@ -327,14 +327,14 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
           multiple
           accept="image/png, image/jpeg, image/webp"
           onChange={handleCreativeImageFilesChange}
-          className="w-full text-sm text-blue-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
+          className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:shadow-sm"
           disabled={adCreativeImageFiles.length >= MAX_AD_CREATIVE_IMAGES}
         />
         {adCreativeImagePreviews.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2 border-2 border-blue-300 p-2 rounded-md bg-blue-50">
+            <div className="mt-2 flex flex-wrap gap-2 border border-gray-300 p-2 rounded-md bg-gray-50">
                 {adCreativeImagePreviews.map((preview, index) => (
                     <div key={`creative-${index}`} className="relative">
-                        <img src={preview} alt={`広告クリエイティブプレビュー ${index + 1}`} className="h-24 w-auto object-contain border-2 border-blue-400 rounded"/>
+                        <img src={preview} alt={`広告クリエイティブプレビュー ${index + 1}`} className="h-24 w-auto object-contain border border-gray-300 rounded shadow-sm"/>
                         <button
                           type="button"
                           onClick={() => removeCreativeImage(index)}
@@ -350,7 +350,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
       </div>
 
       <div>
-        <label htmlFor="referenceUrls" className="block text-sm font-medium text-blue-700 mb-1 font-semibold">
+        <label htmlFor="referenceUrls" className="block text-sm font-medium text-gray-900 mb-1 font-semibold">
           参照URL (最大{MAX_REFERENCE_URLS}個)
         </label>
         <div className="flex gap-2 mb-2">
@@ -365,14 +365,14 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
               }
             }}
             placeholder="https://example.com/product"
-            className="flex-1 p-3 bg-white border-2 border-blue-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-blue-900 placeholder-blue-400"
+            className="flex-1 p-3 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
             disabled={referenceUrls.length >= MAX_REFERENCE_URLS}
           />
           <button
             type="button"
             onClick={addReferenceUrl}
             disabled={referenceUrls.length >= MAX_REFERENCE_URLS || !newReferenceUrl.trim()}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed text-white font-semibold rounded-md transition duration-150 ease-in-out shadow-md hover:shadow-lg"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-md transition duration-150 ease-in-out shadow-sm hover:shadow-md"
           >
             追加
           </button>
@@ -380,12 +380,12 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
         {referenceUrls.length > 0 && (
           <div className="mt-2 space-y-2">
             {referenceUrls.map((url, index) => (
-              <div key={index} className="flex items-center gap-2 p-2 bg-blue-50 border-2 border-blue-300 rounded-md">
-                <span className="flex-1 text-sm text-blue-900 break-all font-medium">{url}</span>
+              <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm">
+                <span className="flex-1 text-sm text-gray-800 break-all font-medium">{url}</span>
                 <button
                   type="button"
                   onClick={() => removeReferenceUrl(index)}
-                  className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded transition duration-150 ease-in-out"
+                  className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded transition duration-150 ease-in-out shadow-sm"
                 >
                   削除
                 </button>
@@ -394,7 +394,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
           </div>
         )}
         {referenceUrls.length >= MAX_REFERENCE_URLS && (
-          <p className="mt-2 text-sm text-amber-600 font-medium">
+          <p className="mt-2 text-sm text-amber-700 font-medium bg-amber-50 p-2 rounded-md border border-amber-200">
             最大{MAX_REFERENCE_URLS}個まで入力できます（URL contextツールの制限に合わせています）
           </p>
         )}
@@ -402,7 +402,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
 
       <div>
         <div className="flex justify-between items-center mb-1">
-          <label htmlFor="clientSharedInfo" className="block text-sm font-medium text-blue-700 font-semibold">
+          <label htmlFor="clientSharedInfo" className="block text-sm font-medium text-gray-900 font-semibold">
             クライアント共有情報・Web非公開情報 (任意)
           </label>
         </div>
@@ -422,7 +422,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
           value={clientSharedInfo}
           onChange={(e) => setClientSharedInfo(e.target.value)}
           rows={4}
-          className="w-full p-3 bg-white border-2 border-blue-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-blue-900 placeholder-blue-400"
+          className="w-full p-3 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
           placeholder="クライアントからの補足情報や、Webに掲載されていない情報をここに入力してください。"
         />
       </div>
@@ -430,7 +430,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md hover:shadow-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-blue-500 disabled:opacity-50 transition-colors"
+        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm hover:shadow-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-blue-500 disabled:opacity-50 transition-colors"
       >
         {isLoading ? '処理中...' : '広告チェックを開始'}
       </button>
